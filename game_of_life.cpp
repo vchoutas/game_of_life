@@ -86,14 +86,14 @@ void GameOfLife::display()
     {
       ptr->currentGrid_[ y * width + x]  ?glColor3f(1,0,1):glColor3f(1,1,1);
 
-      glVertex2f( (x - width / 2 )* xSize + left , 
-          (y - height /2 ) * ySize + bottom);
-      glVertex2f( (x + 1 - width / 2) * xSize + left , 
-          (y - height /2) * ySize + bottom);
-      glVertex2f( (x + 1 - width / 2) * xSize + left, 
-          (y + 1- height /2) * ySize + bottom);
+      glVertex2f( (x - width / 2 )* xSize , 
+         - (y - height /2 ) * ySize);
+      glVertex2f( (x + 1 - width / 2) * xSize , 
+          -(y - height /2) * ySize );
+      glVertex2f( (x + 1 - width / 2) * xSize , 
+          -(y + 1- height /2) * ySize );
       glVertex2f( (x - width / 2)* xSize + left, 
-          (y + 1 - height / 2) * ySize + bottom);
+          -(y + 1 - height / 2) * ySize );
       //glVertex2f(    x*xSize+left,    y*ySize+bottom);
       //glVertex2f((x+1)*xSize+left,    y*ySize+bottom);
       //glVertex2f((x+1)*xSize+left,(y+1)*ySize+bottom);

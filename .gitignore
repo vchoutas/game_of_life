@@ -1,5 +1,7 @@
+*.o
 *.out
 *.exe
 *.txt
 *.pdf
 *.bin
+.*.swp
