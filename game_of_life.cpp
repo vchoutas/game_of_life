@@ -5,6 +5,9 @@ const GLfloat GameOfLife::right = 1.0;
 const GLfloat GameOfLife::bottom = 0.0;
 const GLfloat GameOfLife::top = 1.0;
 const GLint GameOfLife::FPS = 25;
+GLfloat GameOfLife::zoomFactor = 1;
+GLint GameOfLife::windowWidth  = 600;
+GLint GameOfLife::windowHeight = 600 ;
 GameOfLife* GameOfLife::ptr = NULL;
 
 GameOfLife::GameOfLife(int N)
@@ -34,36 +37,51 @@ GameOfLife::GameOfLife(int N)
       << std::endl;
     exit(-1);
   }
-  bool BEACON_2[64] = {  0, 0, 0, 0, 0, 0, 0, 0,
-                         0, 0, 0, 0, 0, 0, 0, 0, 
-                         0, 0, 0, 0, 0, 0, 0, 0, 
-                         0, 0, 0, 0, 1, 1, 1, 0, 
-                         0, 0, 0, 1, 1, 1, 0, 0, 
-                         0, 0, 0, 0, 0, 0, 0, 0, 
-                         0, 0, 0, 0, 0, 0, 0, 0, 
-                         0, 0, 0, 0, 0, 0, 0, 0};
+  //bool BEACON_2[64] = {  0, 0, 0, 0, 0, 0, 0, 1,
+                         //0, 0, 0, 0, 0, 0, 0, 0, 
+                         //0, 0, 1, 1, 0, 0, 0, 0, 
+                         //0, 0, 1, 0, 0, 0, 0, 0, 
+                         //0, 0, 0, 0, 0, 1, 0, 0, 
+                         //0, 0, 0, 0, 1, 1, 0, 0, 
+                         //0, 0, 0, 0, 0, 0, 0, 0, 
+                         //0, 0, 0, 0, 0, 0, 0, 1};
   for(size_t i = 0; i < N; i++)
   {
     for(size_t j = 0; j < N; j++)
     {
-      //currentGrid_[ i * N + j] = ( (float)rand() / (float)RAND_MAX ) 
-        //< THRESHOLD; 
-      currentGrid_[i * N + j] = BEACON_2[ i * N + j ];
-      counter += currentGrid_[ i * N + j];
+      currentGrid_[ i * N + j] = ( (float)rand() / (float)RAND_MAX ) 
+        < THRESHOLD; 
+      //currentGrid_[ i * N + j] = BEACON_2[ i * N + j];
     }
   }
 }
 
 void GameOfLife::initDisplay(void)
 {
-  glutInitWindowSize( 600 , 600);
+  glutInitWindowSize( windowWidth , windowHeight);
   glutInitWindowPosition(0, 0);
   glutCreateWindow("Game of Life");
   glClearColor(0, 0, 0, 0);
 
   glutDisplayFunc(GameOfLife::display);
+  glutKeyboardFunc(GameOfLife::keyBoardCallBack);
 }
 
+void GameOfLife::reshape(int w , int h)
+{
+  windowWidth = w;
+  windowHeight = h;
+
+  glViewport(1000, 1000, windowWidth, windowHeight);
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glOrtho(0.f , windowWidth , windowHeight, 0.f ,0.f ,1.f);
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  glutPostRedisplay();
+}
 void GameOfLife::display()
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -74,8 +92,8 @@ void GameOfLife::display()
     exit(-1);
   }
   glLoadIdentity();
-  GLfloat xSize = (right - left) / ptr->width_;
-  GLfloat ySize = (top - bottom) / ptr->height_;
+  GLfloat xSize = zoomFactor * (right - left) / ptr->width_;
+  GLfloat ySize = zoomFactor * (top - bottom) / ptr->height_;
   GLint width = ptr->width_;
   GLint height = ptr->height_;
 
@@ -84,8 +102,15 @@ void GameOfLife::display()
   {
     for (GLint y = 0; y < height; ++y) 
     {
-      ptr->currentGrid_[ y * width + x]  ?glColor3f(1,0,1):glColor3f(1,1,1);
-
+      //ptr->currentGrid_[ y * width + x]  ?glColor3f(1,0,1):glColor3f(0,0,0);
+      if ( !ptr->nextGrid_[y * width + x] && !ptr->currentGrid_[y*width + x])
+        glColor3f(0,0,0);
+      if ( ptr->nextGrid_[y * width + x] && !ptr->currentGrid_[y*width + x] )
+        glColor3f(0,0.5,0);
+      if (ptr->nextGrid_[y*width + x] && ptr->currentGrid_[y*width + x])
+        glColor3f(1,0,0);
+      if (!ptr->nextGrid_[y*width + x] && ptr->currentGrid_[y*width +x])
+        glColor3f(0,0,1);
       glVertex2f( (x - width / 2 )* xSize , 
          - (y - height /2 ) * ySize);
       glVertex2f( (x + 1 - width / 2) * xSize , 
@@ -94,16 +119,29 @@ void GameOfLife::display()
           -(y + 1- height /2) * ySize );
       glVertex2f( (x - width / 2)* xSize + left, 
           -(y + 1 - height / 2) * ySize );
-      //glVertex2f(    x*xSize+left,    y*ySize+bottom);
-      //glVertex2f((x+1)*xSize+left,    y*ySize+bottom);
-      //glVertex2f((x+1)*xSize+left,(y+1)*ySize+bottom);
-      //glVertex2f(    x*xSize+left,(y+1)*ySize+bottom);
     }
   }
   glEnd();
 
   glFlush();
   glutSwapBuffers();
+}
+
+void GameOfLife::keyBoardCallBack(unsigned char key, int x, int y)
+{
+  switch(key)
+  {
+    case '+':
+      zoomFactor += 0.1;
+      break;
+    case '-':
+      zoomFactor -= 0.1;
+      break;
+    default:
+      break;
+  }
+  if (zoomFactor < 0)
+    zoomFactor = 0.2;
 }
 
 void GameOfLife::getNextGenerationWrapper(int value)
@@ -116,8 +154,8 @@ void GameOfLife::getNextGenerationWrapper(int value)
   }
   ptr->getNextGeneration(value);
   glutPostRedisplay();
-  //glutTimerFunc(1000 / ptr->FPS , GameOfLife::getNextGenerationWrapper, 0);
-  glutTimerFunc(1000 , GameOfLife::getNextGenerationWrapper, 0);
+  glutTimerFunc(1000 / ptr->FPS , GameOfLife::getNextGenerationWrapper, 0);
+  //glutTimerFunc(2000 , GameOfLife::getNextGenerationWrapper, 0);
 
 }
 

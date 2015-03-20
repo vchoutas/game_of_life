@@ -36,6 +36,8 @@ class GameOfLife
     // Function to initialize the necessary OpenGL components.
     void initDisplay(void);
     static void display(void);
+    static void reshape(int w , int h);
+    static void keyBoardCallBack(unsigned char key, int x, int y);
     // The function that gets the next generation of the game.
     static void getNextGenerationWrapper(int value);
     void getNextGeneration(int value);
@@ -45,6 +47,10 @@ class GameOfLife
     int height_;
     bool *currentGrid_;
     bool *nextGrid_;
+
+    static GLfloat zoomFactor;
+    static GLint windowWidth;
+    static GLint windowHeight;
     static const GLfloat left ;
     static const GLfloat right ;
     static const GLfloat bottom;

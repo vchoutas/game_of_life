@@ -3,7 +3,7 @@
 int main(int argc,char** argv)
 {
   glutInit(&argc, argv);
-  int N = 8;
+  int N = 1000;
   std::string fileName("table500x500.bin");
   GameOfLife *game = new GameOfLife(N);
 
