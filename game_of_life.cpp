@@ -156,7 +156,7 @@ void GameOfLife::reshape(int w , int h)
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(0.f , windowWidth , windowHeight, 0.f, 0.f , 1.f);
+  glOrtho(0.f, windowWidth , windowHeight, 0.f, 0.f , 1.f);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
@@ -305,6 +305,11 @@ void GameOfLife::display()
   GLint width = ptr->width_;
   GLint height = ptr->height_;
 
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glTranslatef(deltaX, deltaY, 0.0f);
+
+  glMatrixMode(GL_MODELVIEW);
   // Load the identity transformation matrix.
   glLoadIdentity();
   // Define the scale transformation so as to properly view the grid.
@@ -313,7 +318,6 @@ void GameOfLife::display()
   // on the center of the window and move it when the user moves it using the
   // keyboard arrow keys.
   glTranslatef(-width / 2.0f, height / 2.0f, 0.0f);
-  glTranslatef(deltaX, deltaY, 0.0f);
 
   glBegin(GL_QUADS);
 
@@ -391,16 +395,16 @@ void GameOfLife::arrowKeyCallback(int key, int x, int y)
   switch (key)
   {
     case GLUT_KEY_LEFT: //left
-      deltaX -= 1.0f;
+      deltaX -= 0.005f;
       break;
     case GLUT_KEY_UP: //up
-      deltaY += 1.0f;
+      deltaY += 0.005f;
       break;
     case GLUT_KEY_RIGHT: //right
-      deltaX += 1.0f;
+      deltaX += 0.005f;
       break;
     case GLUT_KEY_DOWN: //down
-      deltaY -= 1.0f;
+      deltaY -= 0.005f;
       break;
     default:
       break;
