@@ -22,33 +22,43 @@ class GameOfLife
     // Constructor that creates a random square grid
     GameOfLife(int N);
 
-    GameOfLife(int N, std::string fileName){};
+    GameOfLife(int N, std::string fileName, bool display = false){};
 
-    // Constructor that creates a random orthogonal grid of size MxN
-    GameOfLife(int M, int N){}
+    ~GameOfLife()
+    {
+      delete[] currentGrid_;
+      delete[] nextGrid_;
+    }
 
-    // Constructor that reads from a file an orthogonal grid of size MxN
-    GameOfLife(int M,int N, std::string fileName){}
-    
     // The function that calculates the number of living neighbors cells.
-    int calcNeighbors(int x,int left,int right,int center,int up ,int down);
-  
+    inline int calcNeighbors(int x,int left,int right,int center,int up ,int down);
+
+    void terminate(void);
+
     // Function to initialize the necessary OpenGL components.
     void initDisplay(void);
     static void display(void);
     static void reshape(int w , int h);
+
+    static void arrowKeyCallback(int key, int x, int y);
     static void keyBoardCallBack(unsigned char key, int x, int y);
     // The function that gets the next generation of the game.
     static void getNextGenerationWrapper(int value);
     void getNextGeneration(int value);
+
   private:
+
     static GameOfLife* ptr;
     int width_;
     int height_;
+    int windowId_;
     bool *currentGrid_;
     bool *nextGrid_;
+    color* colorArray;
 
     static GLfloat zoomFactor;
+    static GLfloat deltaX;
+    static GLfloat deltaY;
     static GLint windowWidth;
     static GLint windowHeight;
     static const GLfloat left ;

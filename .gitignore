@@ -1,7 +1,16 @@
+# Object code Files
 *.o
+
+# Executable files.
 *.out
 *.exe
-*.txt
-*.pdf
 *.bin
+
+# Text files
+*.txt
+
+# PDF files
+*.pdf
+
+# Vim Swap Files
 .*.swp
