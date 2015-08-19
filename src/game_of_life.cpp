@@ -275,13 +275,6 @@ void GameOfLife::play()
   {
     gettimeofday(&startTime, NULL);
     glutMainLoop();
-
-    // for (genCnt_ = 0; genCnt_ < maxGenerationNumber_; ++genCnt_)
-    // {
-      // getNextGeneration();
-      // glutPostRedisplay();
-    // }
-    // getNextGenerationWrapper();
   }
 
   std::cout << "Finished playing the game of Life!" << std::endl;
@@ -289,15 +282,8 @@ void GameOfLife::play()
 
 void GameOfLife::display()
 {
-
   // Clear the buffer.
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  if (ptr == NULL)
-  {
-    std::cout << "Pointer not initialized ! " << std::endl;
-    std::exit(-1);
-  }
 
   // Calculate the size of each cell in each direction.
   GLfloat xSize = zoomFactor * (right - left) / ptr->width_;

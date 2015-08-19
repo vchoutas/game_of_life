@@ -1,3 +1,9 @@
+# Ignore everything in the folder containing the binaries.
+bin/
+
+# Ignore all the files in the build directory
+build/
+
 # Object code Files
 *.o
 
@@ -5,9 +11,6 @@
 *.out
 *.exe
 *.bin
-
-# Text files
-*.txt
 
 # PDF files
 *.pdf
