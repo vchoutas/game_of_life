@@ -20,20 +20,25 @@ class GameOfLife
     // Default Constructor.
     GameOfLife(){}
     // Constructor that creates a random square grid
-    GameOfLife(int N);
+    explicit GameOfLife(int N);
 
-    GameOfLife(int N, std::string fileName, bool display = false){};
+    explicit GameOfLife(std::string fileName);
 
     ~GameOfLife()
     {
+      std::cout << "Destroying Game of Life Object!" << std::endl;
       delete[] currentGrid_;
       delete[] nextGrid_;
     }
 
     // The function that calculates the number of living neighbors cells.
-    inline int calcNeighbors(int x,int left,int right,int center,int up ,int down);
+    inline int calcNeighbors(int x, int left, int right, int center, int up , int down);
+
+    bool parseConfigFile(std::string fileName);
 
     void terminate(void);
+
+    void play();
 
     // Function to initialize the necessary OpenGL components.
     void initDisplay(void);
@@ -43,18 +48,25 @@ class GameOfLife
     static void arrowKeyCallback(int key, int x, int y);
     static void keyBoardCallBack(unsigned char key, int x, int y);
     // The function that gets the next generation of the game.
-    static void getNextGenerationWrapper(int value);
-    void getNextGeneration(int value);
+    static void getNextGenerationWrapper();
+    void getNextGeneration();
 
   private:
-
     static GameOfLife* ptr;
     int width_;
     int height_;
     int windowId_;
     bool *currentGrid_;
     bool *nextGrid_;
-    color* colorArray;
+    color* colorArray_;
+
+    std::string outputFileName_;
+    std::string inputFileName_;
+    bool displayFlag_;
+    int maxGenerationNumber_;
+    int genCnt_;
+
+    struct timeval startTime, endTime;
 
     static GLfloat zoomFactor;
     static GLfloat deltaX;

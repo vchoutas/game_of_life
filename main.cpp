@@ -2,24 +2,17 @@
 
 int main(int argc,char* argv[])
 {
-  // if (argc < 3)
-  // {
-    // std::cout << "Usage : " << argv[0] << std::endl
-      // << "\t inputTableFile(if 'random' a random grid will be created)"
-      // << std::endl
-      // << "\t N (size of grid)" << std::endl
-      // << "\t toggleDisplay : true if yes, false if not(default is false)"
-      // << std::endl;
-    // return -1;
-  // }
+  if (argc < 2)
+  {
+    std::cout << "Usage : " << argv[0] << std::endl
+      << "\t configFileName The name of the configuration File"
+      << std::endl;
+    return -1;
+  }
   glutInit(&argc, argv);
-  int N = atoi(argv[1]);
-  std::cout << N << std::endl;
-  std::string fileName("table500x500.bin");
-  GameOfLife game(N);
+  GameOfLife game(argv[1]);
 
-  game.getNextGenerationWrapper(0);
-  glutMainLoop();
+  game.play();
 
   return 0;
 }

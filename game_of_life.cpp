@@ -1,6 +1,8 @@
 #include <sys/time.h>
-#include "game_of_life.h"
+#include <fstream>
+#include <sstream>
 
+#include "game_of_life.h"
 
 const GLfloat GameOfLife::left = 0.0;
 const GLfloat GameOfLife::right = 1.0;
@@ -20,7 +22,6 @@ GameOfLife::GameOfLife(int N)
   srand(time(NULL));
 
   ptr = this;
-  int counter = 0;
   // Set the dimensions of the grid.
   width_ = N;
   height_ = N;
@@ -42,8 +43,8 @@ GameOfLife::GameOfLife(int N)
     std::exit(-1);
   }
 
-  colorArray = new color[width_ * height_];
-  if (colorArray == NULL)
+  colorArray_ = new color[width_ * height_];
+  if (colorArray_ == NULL)
   {
     std::cout << "Could not allocate memory for the color Array!"
       << std::endl;
@@ -56,10 +57,78 @@ GameOfLife::GameOfLife(int N)
     {
       currentGrid_[i * width_ + j] = ( (float)rand() / (float)RAND_MAX )
         < THRESHOLD;
-      colorArray[i * width_ + j] = color(0, 0, 0);
+      colorArray_[i * width_ + j] = color(0, 0, 0);
       //currentGrid_[ i * N + j] = BEACON_2[ i * N + j];
     }
   }
+}
+
+GameOfLife::GameOfLife(std::string fileName): genCnt_(0)
+{
+  bool parseFlag = parseConfigFile(fileName);
+  if (!parseFlag)
+  {
+    std::cout << "Game of Life will not begin!Exiting now!" << std::endl;
+    std::exit(-1);
+  }
+
+  currentGrid_ = new bool[width_ * height_];
+  if ( currentGrid_ == NULL )
+  {
+    std::cout << "Could not allocate memory for the current Grid!" <<
+      std::endl;
+    std::exit(-1);
+  }
+  nextGrid_ = new bool[width_ * height_];
+  if ( nextGrid_ == NULL )
+  {
+    std::cout << "Could not allocate memory for the next generation Grid!"
+      << std::endl;
+    std::exit(-1);
+  }
+
+  colorArray_ = new color[width_ * height_];
+  if (colorArray_ == NULL)
+  {
+    std::cout << "Could not allocate memory for the color Array!"
+      << std::endl;
+    std::exit(-1);
+  }
+
+  // If the specified input file name is the "random" keyword
+  // then create a random initial grid.
+  if (inputFileName_.compare("random") == 0)
+  {
+    srand(time(NULL));
+    for(int i = 0; i < height_; i++)
+    {
+      for(int j = 0; j < width_; j++)
+      {
+        currentGrid_[i * width_ + j] = ( (float)rand() / (float)RAND_MAX )
+          < THRESHOLD;
+      }
+    }
+  }
+  else
+    // Parse the grid from the file
+    utilities::read_from_file(currentGrid_, inputFileName_, width_);
+
+  std::cout << "Successfully created the initial grid!" << std::endl;
+
+  if (displayFlag_)
+    initDisplay();
+
+  for(int i = 0; i < height_; i++)
+  {
+    for(int j = 0; j < width_; j++)
+    {
+      colorArray_[i * width_ + j] = color(0, 0, 0);
+    }
+  }
+  ptr = this;
+
+  std::cout << "Created Game of Life Object!" << std::endl;
+  return;
 }
 
 /**
@@ -73,6 +142,7 @@ void GameOfLife::initDisplay(void)
   glClearColor(0, 0, 0, 0);
 
   glutDisplayFunc(GameOfLife::display);
+  glutIdleFunc(GameOfLife::getNextGenerationWrapper);
   glutKeyboardFunc(GameOfLife::keyBoardCallBack);
   glutSpecialFunc(GameOfLife::arrowKeyCallback);
 }
@@ -92,10 +162,133 @@ void GameOfLife::reshape(int w , int h)
 
   glutPostRedisplay();
 }
+
+
+bool GameOfLife::parseConfigFile(std::string fileName)
+{
+  std::cout << "Parsing Input File!" << std::endl;
+
+  std::ifstream configFile;
+  configFile.open(fileName.c_str());
+  if (!configFile.is_open())
+  {
+    std::cout << "Could not open the configuration file!" << std::endl;
+    return false;
+  }
+
+  std::string line;
+  std::getline(configFile, line);
+  while (configFile)
+  {
+    // Ignore tab lines, carriage return, newline and the # characters
+    if ((line.find_first_not_of(" \t\r\n") != std::string::npos) && (line[0] != '#'))
+    {
+      std::stringstream ss(line);
+      std::string command;
+      ss >> command;
+
+      // Get the size of the Game Of Life Grid.
+      if (command.compare("width") == 0)
+      {
+        ss >> width_;
+        if (ss.fail())
+        {
+          std::cout << "Could not read the width of the grid!" << std::endl;
+          return false;
+        }
+      }
+      else if (command.compare("height") == 0)
+      {
+        ss >> height_;
+        if (ss.fail())
+        {
+          std::cout << "Could not read the height of the grid!" << std::endl;
+          return false;
+        }
+      }
+      // Get the name of the file where the board is stored.
+      else if (command.compare("boardFileName") == 0)
+      {
+        ss >> inputFileName_;
+        if (ss.fail())
+        {
+          std::cout << "Could not read the name of the file containing the board!" << std::endl;
+          return false;
+        }
+      }
+      // Parse the option specifying whether to display the game or not.
+      else if (command.compare("display") == 0)
+      {
+        std::string displayStr;
+        ss >> displayStr;
+        if (ss.fail())
+        {
+          std::cout << "Could not read the value for the display flag, setting it to false!" << std::endl;
+          displayFlag_ = false;
+        }
+        else
+          displayFlag_ = displayStr.compare("true") == 0;
+      }
+      // Get the maximum number of generations for the game.
+      else if (command.compare("generationNumber") == 0)
+      {
+        ss >> maxGenerationNumber_;
+        if (ss.fail())
+        {
+          std::cout << "Could not parse the max number of generations!" << std::endl;
+          return false;
+        }
+      }
+      // If present, read the name of the file where the
+      else if (command.compare("outputFile") == 0)
+      {
+        ss >> outputFileName_;
+        if (ss.fail())
+          std::cout << "Could not read the name of the output grid file!"
+            << " The result will not be saved!"<< std::endl;
+      }
+    } // End of If clause for invalid characters.
+
+    // Get the next line of the file.
+    getline(configFile, line);
+  } // End of While loop.
+
+  std::cout << "Finished Reading the configuration file!" << std::endl;
+  return true;
+}
+
+void GameOfLife::play()
+{
+  std::cout << "Starting to play!" << std::endl;
+
+  if (!displayFlag_)
+  {
+    gettimeofday(&startTime, NULL);
+    for (genCnt_ = 0; genCnt_ < maxGenerationNumber_; ++genCnt_)
+      getNextGeneration();
+    gettimeofday(&endTime, NULL);
+    double execTime = (double)((endTime.tv_usec - startTime.tv_usec)
+        /1.0e6 + endTime.tv_sec - startTime.tv_sec);
+    std::cout << "Execution Time is = " << execTime << std::endl;
+  }
+  else
+  {
+    gettimeofday(&startTime, NULL);
+    glutMainLoop();
+
+    // for (genCnt_ = 0; genCnt_ < maxGenerationNumber_; ++genCnt_)
+    // {
+      // getNextGeneration();
+      // glutPostRedisplay();
+    // }
+    // getNextGenerationWrapper();
+  }
+
+  std::cout << "Finished playing the game of Life!" << std::endl;
+}
+
 void GameOfLife::display()
 {
-  struct timeval startTime, endTime;
-  gettimeofday(&startTime, NULL);
 
   // Clear the buffer.
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -103,7 +296,7 @@ void GameOfLife::display()
   if (ptr == NULL)
   {
     std::cout << "Pointer not initialized ! " << std::endl;
-    exit(-1);
+    std::exit(-1);
   }
 
   // Calculate the size of each cell in each direction.
@@ -134,22 +327,22 @@ void GameOfLife::display()
       // of the game.
       // If the current cell was dead and is revived
       if (ptr->currentGrid_[index] && !ptr->nextGrid_[index])
-        ptr->colorArray[index] = color(0, 128, 0);
+        ptr->colorArray_[index] = color(0, 128, 0);
 
       // If the cell was alive and died.
       if (!ptr->currentGrid_[index] && ptr->nextGrid_[index])
-        ptr->colorArray[index] = color(128, 0, 0);
+        ptr->colorArray_[index] = color(128, 0, 0);
       else
-        ptr->colorArray[index].red > 0 ? ptr->colorArray[index].red-- : 0;
+        ptr->colorArray_[index].red > 0 ? ptr->colorArray_[index].red-- : 0;
 
       // If the cell remains alive.
       if (ptr->currentGrid_[index])
-        ptr->colorArray[index].green >= 255 ? ptr->colorArray[index].green = 255:
-          ptr->colorArray[index].green++;
+        ptr->colorArray_[index].green >= 255 ? ptr->colorArray_[index].green = 255:
+          ptr->colorArray_[index].green++;
 
       // Update the current color.
-      glColor3ub(ptr->colorArray[index].red, ptr->colorArray[index].green,
-          ptr->colorArray[index].blue);
+      glColor3ub(ptr->colorArray_[index].red, ptr->colorArray_[index].green,
+          ptr->colorArray_[index].blue);
       // Draw the vertex.
       glVertex2f(x, -y - 1);
       glVertex2f(x + 1, -y - 1);
@@ -161,11 +354,6 @@ void GameOfLife::display()
   glFlush();
   glutSwapBuffers();
 
-  gettimeofday(&endTime, NULL);
-
-  double renderingTime = (double)((endTime.tv_usec - startTime.tv_usec)
-      /1.0e6 + endTime.tv_sec - startTime.tv_sec);
-  // std::cout << "Rendering Time = " << renderingTime << std::endl;
 }
 
 void GameOfLife::keyBoardCallBack(unsigned char key, int x, int y)
@@ -185,7 +373,7 @@ void GameOfLife::keyBoardCallBack(unsigned char key, int x, int y)
     case '-':
       zoomFactor -= 0.1f;
       break;
-    // If the Escape key was pressed then free the allocated resources and exit.
+    // If the Escape key was pressed then free the allocated resources and std::exit.
     case char(27):
       ptr->terminate();
       break;
@@ -221,44 +409,46 @@ void GameOfLife::arrowKeyCallback(int key, int x, int y)
 
 void GameOfLife::terminate()
 {
+  gettimeofday(&endTime, NULL);
+  double execTime = (double)((endTime.tv_usec - startTime.tv_usec)
+      /1.0e6 + endTime.tv_sec - startTime.tv_sec);
+  std::cout << "Execution Time is = " << execTime << std::endl;
   std::cout << "Terminating Game of Life!" << std::endl;
   delete[] currentGrid_;
   delete[] nextGrid_;
   glutDestroyWindow(windowId_);
-  exit(0);
+  std::exit(0);
   return;
 }
 
-void GameOfLife::getNextGenerationWrapper(int value)
+void GameOfLife::getNextGenerationWrapper()
 {
   if (ptr == NULL)
   {
     std::cout << "The pointer to the function has not been initialized!"
       << std::endl;
-    exit(-1);
+    std::exit(-1);
   }
-  struct timeval startTime, endTime;
+  if (ptr->genCnt_ > ptr->maxGenerationNumber_)
+    ptr->terminate();
 
-  gettimeofday(&startTime, NULL);
-  ptr->getNextGeneration(value);
-  gettimeofday(&endTime, NULL);
+  // gettimeofday(&ptr->startTime, NULL);
+  ptr->getNextGeneration();
+  // gettimeofday(&ptr->endTime, NULL);
 
-  double nextGenTime = (double)((endTime.tv_usec - startTime.tv_usec)
-      /1.0e6 + endTime.tv_sec - startTime.tv_sec);
-
-  gettimeofday(&startTime, NULL);
-  glutPostRedisplay();
-  gettimeofday(&endTime, NULL);
+  // double nextGenTime = (double)((ptr->endTime.tv_usec - ptr->startTime.tv_usec)
+      // /1.0e6 + ptr->endTime.tv_sec - ptr->startTime.tv_sec);
 
   // std::cout << std::endl << "Next Gen Time = " << nextGenTime << std::endl;
 
-  // TO DO : Add max generation limit
-  glutTimerFunc(1000 / ptr->FPS , GameOfLife::getNextGenerationWrapper, 0);
+  glutPostRedisplay();
+  return;
 }
 
 
-void GameOfLife::getNextGeneration(int value)
+void GameOfLife::getNextGeneration()
 {
+  genCnt_++;
   for (int y = 0; y < height_; ++y)
   {
     size_t up = ( (y + height_ - 1) % height_) * width_;
