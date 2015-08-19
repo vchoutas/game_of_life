@@ -312,7 +312,8 @@ void GameOfLife::display()
   // Apply a translation transformation so as to place the center of the grid
   // on the center of the window and move it when the user moves it using the
   // keyboard arrow keys.
-  glTranslatef(-width / 2.0f + deltaX, height / 2.0f + deltaY, 0.0f);
+  glTranslatef(-width / 2.0f, height / 2.0f, 0.0f);
+  glTranslatef(deltaX, deltaY, 0.0f);
 
   glBegin(GL_QUADS);
 
