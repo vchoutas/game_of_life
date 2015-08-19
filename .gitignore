@@ -7,6 +7,9 @@ build/
 # Object code Files
 *.o
 
+# Ignore ycm files
+.ycm*
+
 # Executable files.
 *.out
 *.exe
