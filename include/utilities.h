@@ -7,13 +7,34 @@
 #include <string>
 #include <cstdio>
 #include <iostream>
+
 #ifdef __APPLE__
 #  include <OpenGL/gl.h>
+#  include <OpenGL/glu.h>
+#  include <GLUT/glut.h>
 #else
+#  include <GL/glew.h>
+#  include <GL/freeglut.h>
 #  include <GL/gl.h>
+#  include <GL/glu.h>
+#  include <GL/glut.h>
 #endif
+
 #define THRESHOLD 0.3
 #define GENERATIONS 10
+
+#define SWAP(x, y) do {typeof(x) SWAP = x; x = y; y = SWAP; } while(0)
+
+#define cudaCheckErrors(msg) \
+  do { \
+    cudaError_t __err = cudaGetLastError(); \
+    if (__err != cudaSuccess) { \
+      fprintf(stderr, "Fatal error: %s (%s at %s:%d)\n", \
+          msg, cudaGetErrorString(__err), \
+          __FILE__, __LINE__); \
+      exit(1); \
+    } \
+  } while (0)
 
 namespace utilities
 {

@@ -4,11 +4,11 @@ width 500
 height 500
 
 # Input board file Name
-boardFileName table500x500.bin
+boardFileName /home/vchoutas/Programming/Parallel/game_of_life/bin/table500x500.bin
 
 # Display Flag. Set to true if you want to open a window
 # to view the Game of Life.
-display false
+display true
 
 # The maximum number of generations for the game.
 generationNumber 1000

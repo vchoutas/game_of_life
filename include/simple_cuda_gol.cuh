@@ -1,40 +1,31 @@
-#ifndef GAME_OF_LIFE_H
-#define GAME_OF_LIFE_H
+#ifndef SIMPLE_CUDA_GOL_H
+#define SIMPLE_CUDA_GOL_H
 
 #include "utilities.h"
 
-#ifdef __APPLE__
-#  include <OpenGL/gl.h>
-#  include <OpenGL/glu.h>
-#  include <GLUT/glut.h>
-#else
 
-#  include <GL/gl.h>
-#  include <GL/glu.h>
-#  include <GL/glut.h>
-#endif
+#include <cuda.h>
+#include <cuda_runtime.h>
 
+__global__ void simpleNextGenerationKernel(bool* currentGrid, bool* nextGrid, const int N);
+__device__ inline int calcNeighborsKernel(bool* currentGrid, int x, int left, int right, int center, int up , int down);
 
-class GameOfLife
+class SimpleCudaGoL
 {
   public:
     // Default Constructor.
-    GameOfLife(): left(-1.0f), right(1.0f), top(1.0f), bottom(-1.0f)
-    {}
+    SimpleCudaGoL(){}
     // Constructor that creates a random square grid
-    explicit GameOfLife(int N);
+    explicit SimpleCudaGoL(int N);
 
-    explicit GameOfLife(std::string fileName);
+    explicit SimpleCudaGoL(std::string fileName);
 
-    ~GameOfLife()
+    ~SimpleCudaGoL()
     {
-      std::cout << "Destroying Game of Life Object!" << std::endl;
+      std::cout << "Destroying Simple Cuda Game of Life Object!" << std::endl;
       delete[] currentGrid_;
       delete[] nextGrid_;
     }
-
-    // The function that calculates the number of living neighbors cells.
-    inline int calcNeighbors(int x, int left, int right, int center, int up , int down);
 
     bool parseConfigFile(std::string fileName);
 
@@ -52,40 +43,33 @@ class GameOfLife
     // The function that gets the next generation of the game.
     static void getNextGenerationWrapper();
     void getNextGeneration();
-
-    void updateColors(int x, int y);
-    void initColorArray(void);
-
-    void initTexture(void);
+    inline int calcNeighbors(int x, int left, int right, int center, int up , int down);
 
   private:
-    static GameOfLife* ptr;
+    static SimpleCudaGoL* ptr;
     int width_;
     int height_;
     int windowId_;
     bool *currentGrid_;
     bool *nextGrid_;
-    GLubyte* colorArray_;
+    color* colorArray_;
 
     std::string outputFileName_;
     std::string inputFileName_;
     bool displayFlag_;
     int maxGenerationNumber_;
-    GLuint gl_pixelBufferObject;
-    GLuint gl_texturePtr;
     int genCnt_;
-
-    struct timeval startTime, endTime;
 
     static GLfloat zoomFactor;
     static GLfloat deltaX;
     static GLfloat deltaY;
     static GLint windowWidth;
     static GLint windowHeight;
-    const GLfloat left ;
-    const GLfloat right ;
-    const GLfloat bottom;
-    const GLfloat top;
+    static const GLfloat left ;
+    static const GLfloat right ;
+    static const GLfloat bottom;
+    static const GLfloat top;
+    static const GLint FPS;
 };
 
-#endif // GAME_OF_LIFE_H
+#endif // SIMPLE_CUDA_GOL_H

@@ -1,21 +1,25 @@
 cmake_minimum_required(VERSION 2.8)
 project(game_of_life)
 
-find_package(CUDA QUIET REQUIRED)
+find_package(CUDA)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
+find_package(GLEW REQUIRED)
 
 # Pass options to NVCC
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -gencode arch=compute_22,code=sm_22)
+if (${CUDA_FOUND})
+  set(CUDA_NVCC_FLAGS "-arch=sm_20")
+endif()
 
 
-if(${OPENGL_FOUND} AND ${CUDA_FOUND})
+if(${OPENGL_FOUND})
   set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
   include_directories(
     include
     ${OPENGL_INCLUDE_DIRS}
     ${GLUT_INCLUDE_DIRS}
+    ${GLEW_INCLUDE_DIRS}
     )
 
   add_library(${PROJECT_NAME}_utils
@@ -23,18 +27,38 @@ if(${OPENGL_FOUND} AND ${CUDA_FOUND})
   target_link_libraries(${PROJECT_NAME}_utils
     ${OPENGL_LIBRARIES})
 
+  if(${CUDA_FOUND})
+    cuda_add_library(${PROJECT_NAME}_simple_cuda_lib
+      src/simple_cuda_gol.cu)
+    target_link_libraries(${PROJECT_NAME}_simple_cuda_lib
+      ${PROJECT_NAME}_utils
+      ${OPENGL_LIBRARIES}
+      ${GLUT_LIBRARY})
+  endif()
+
   add_library(${PROJECT_NAME}_serial_lib
     src/game_of_life.cpp
     )
   target_link_libraries(${PROJECT_NAME}_serial_lib
     ${PROJECT_NAME}_utils
     ${OPENGL_LIBRARIES}
-    ${GLUT_LIBRARY})
+    ${GLUT_LIBRARY}
+    ${GLEW_LIBRARY}
+    )
 
-  add_executable(${PROJECT_NAME}_serial.exe
-    src/main.cpp)
-  target_link_libraries(${PROJECT_NAME}_serial.exe
-    ${PROJECT_NAME}_serial_lib)
+  if(${CUDA_FOUND})
+    cuda_add_executable(${PROJECT_NAME}.exe
+      src/cuda_main.cpp)
+    target_link_libraries(${PROJECT_NAME}.exe
+      ${PROJECT_NAME}_serial_lib
+      ${PROJECT_NAME}_simple_cuda_lib)
+  else()
+    add_executable(${PROJECT_NAME}.exe
+      src/main.cpp)
+    target_link_libraries(${PROJECT_NAME}.exe
+      ${PROJECT_NAME}_serial_lib
+      )
+  endif()
 
 endif()
 

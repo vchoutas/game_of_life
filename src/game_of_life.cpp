@@ -4,11 +4,6 @@
 
 #include "game_of_life.h"
 
-const GLfloat GameOfLife::left = 0.0;
-const GLfloat GameOfLife::right = 1.0;
-const GLfloat GameOfLife::bottom = 0.0;
-const GLfloat GameOfLife::top = 1.0;
-const GLint GameOfLife::FPS = 25;
 GLfloat GameOfLife::zoomFactor = 1;
 GLfloat GameOfLife::deltaX = 0.0f;
 GLfloat GameOfLife::deltaY = 0.0f;
@@ -16,7 +11,8 @@ GLint GameOfLife::windowWidth  = 600;
 GLint GameOfLife::windowHeight = 600 ;
 GameOfLife* GameOfLife::ptr = NULL;
 
-GameOfLife::GameOfLife(int N)
+GameOfLife::GameOfLife(int N):
+  left(-1.0f), right(1.0f), top(1.0f), bottom(-1.0f)
 {
   // Seed the random number Generator
   srand(time(NULL));
@@ -43,7 +39,7 @@ GameOfLife::GameOfLife(int N)
     std::exit(-1);
   }
 
-  colorArray_ = new color[width_ * height_];
+  colorArray_ = new GLubyte[3 * width_ * height_];
   if (colorArray_ == NULL)
   {
     std::cout << "Could not allocate memory for the color Array!"
@@ -57,13 +53,16 @@ GameOfLife::GameOfLife(int N)
     {
       currentGrid_[i * width_ + j] = ( (float)rand() / (float)RAND_MAX )
         < THRESHOLD;
-      colorArray_[i * width_ + j] = color(0, 0, 0);
+      colorArray_[i * width_ + j]  = 0;
+      colorArray_[width_ * height_ + i * width_ + j] = 0;
+      colorArray_[2 * width_ * height_ + i * width_ + j] = 0;
       //currentGrid_[ i * N + j] = BEACON_2[ i * N + j];
     }
   }
 }
 
-GameOfLife::GameOfLife(std::string fileName): genCnt_(0)
+GameOfLife::GameOfLife(std::string fileName):
+  left(-1.0f), right(1.0f), top(1.0f), bottom(-1.0f)
 {
   bool parseFlag = parseConfigFile(fileName);
   if (!parseFlag)
@@ -87,13 +86,7 @@ GameOfLife::GameOfLife(std::string fileName): genCnt_(0)
     std::exit(-1);
   }
 
-  colorArray_ = new color[width_ * height_];
-  if (colorArray_ == NULL)
-  {
-    std::cout << "Could not allocate memory for the color Array!"
-      << std::endl;
-    std::exit(-1);
-  }
+
 
   // If the specified input file name is the "random" keyword
   // then create a random initial grid.
@@ -115,21 +108,19 @@ GameOfLife::GameOfLife(std::string fileName): genCnt_(0)
 
   std::cout << "Successfully created the initial grid!" << std::endl;
 
+  // If display is enabled :
   if (displayFlag_)
-    initDisplay();
-
-  for(int i = 0; i < height_; i++)
   {
-    for(int j = 0; j < width_; j++)
-    {
-      colorArray_[i * width_ + j] = color(0, 0, 0);
-    }
+    // Set up all the necessary OpenGL functions.
+    initDisplay();
   }
   ptr = this;
-
   std::cout << "Created Game of Life Object!" << std::endl;
   return;
 }
+
+
+
 
 /**
  * @brief Initialize all the functions used for displaying the grid.
@@ -139,12 +130,43 @@ void GameOfLife::initDisplay(void)
   glutInitWindowSize(windowWidth , windowHeight);
   glutInitWindowPosition(0, 0);
   windowId_ = glutCreateWindow("Game of Life");
-  glClearColor(0, 0, 0, 0);
+  glewInit();
+
+  if (!glewIsSupported("GL_VERSION_2_0"))
+  {
+    std::cerr << "ERROR: Support for necessary OpenGL extensions missing." << std::endl;
+    std::exit(-1);
+  }
+
+  glutReportErrors();
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
   glutDisplayFunc(GameOfLife::display);
   glutIdleFunc(GameOfLife::getNextGenerationWrapper);
   glutKeyboardFunc(GameOfLife::keyBoardCallBack);
   glutSpecialFunc(GameOfLife::arrowKeyCallback);
+
+  std::cout << "Creating Texture!" << std::endl;
+  initTexture();
+  std::cout << "Finished creating texture object!" << std::endl;
+}
+
+void GameOfLife::initTexture(void)
+{
+
+  initColorArray();
+  glEnable(GL_TEXTURE_2D);
+  glGenTextures(1, &gl_texturePtr);
+  glBindTexture(GL_TEXTURE_2D, gl_texturePtr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width_, height_, 0, GL_RGB,
+      GL_UNSIGNED_BYTE, colorArray_);
+
+  glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void GameOfLife::reshape(int w , int h)
@@ -264,7 +286,7 @@ void GameOfLife::play()
   if (!displayFlag_)
   {
     gettimeofday(&startTime, NULL);
-    for (genCnt_ = 0; genCnt_ < maxGenerationNumber_; ++genCnt_)
+    for (int i = 0; i < maxGenerationNumber_; ++i)
       getNextGeneration();
     gettimeofday(&endTime, NULL);
     double execTime = (double)((endTime.tv_usec - startTime.tv_usec)
@@ -273,6 +295,7 @@ void GameOfLife::play()
   }
   else
   {
+    genCnt_ = 0;
     gettimeofday(&startTime, NULL);
     glutMainLoop();
   }
@@ -280,14 +303,65 @@ void GameOfLife::play()
   std::cout << "Finished playing the game of Life!" << std::endl;
 }
 
+void GameOfLife::initColorArray(void)
+{
+  // Allocate memory for the color array as a 3 channel image with size equal to
+  // width_ X height_.
+  colorArray_ = new GLubyte[3 * width_ * height_];
+  if (colorArray_ == NULL)
+  {
+    std::cout << "Could not allocate memory for the color Array!"
+      << std::endl;
+    std::exit(-1);
+  }
+  // Initialize it to black.
+  for(int i = 0; i < height_; i++)
+  {
+    for(int j = 0; j < width_; j++)
+    {
+      colorArray_[i * width_ * 3 + j * 3]  = 0;
+      if (currentGrid_[i * width_ + j])
+        colorArray_[i * width_ * 3 + j * 3 + 1]  = 255;
+      colorArray_[i * width_ * 3 + j * 3 + 2]  = 0;
+    }
+  }
+}
+
+void GameOfLife::updateColors(int x, int y)
+{
+  int index = y * width_ + x;
+  int colorIndex = 3 * index;
+  // If the current cell was dead and is revived
+  if (nextGrid_[index] && !currentGrid_[index])
+  {
+    colorArray_[colorIndex]  = 0;
+    colorArray_[colorIndex + 1]  = 128;
+    colorArray_[colorIndex + 2]  = 0;
+  }
+  // If the cell was alive and died.
+  if (!nextGrid_[index] && currentGrid_[index])
+  {
+    colorArray_[colorIndex] = 255;
+    colorArray_[colorIndex + 1] = 0;
+    colorArray_[colorIndex + 2] = 0;
+  }
+  else
+    colorArray_[colorIndex] > 0 ? colorArray_[colorIndex]-- : colorArray_[colorIndex] = 0;
+
+  // If the cell remains alive.
+  if (nextGrid_[index])
+    colorArray_[colorIndex + 1] >= 255 ? colorArray_[colorIndex + 1] = 255:
+      colorArray_[colorIndex + 1]++;
+  return;
+}
+
 void GameOfLife::display()
 {
-  // Clear the buffer.
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
   // Calculate the size of each cell in each direction.
-  GLfloat xSize = zoomFactor * (right - left) / ptr->width_;
-  GLfloat ySize = zoomFactor * (top - bottom) / ptr->height_;
+  GLfloat xSize = zoomFactor * (ptr->right - ptr->left) / ptr->width_;
+  GLfloat ySize = zoomFactor * (ptr->top - ptr->bottom) / ptr->height_;
+
   GLint width = ptr->width_;
   GLint height = ptr->height_;
 
@@ -305,46 +379,26 @@ void GameOfLife::display()
   // keyboard arrow keys.
   glTranslatef(-width / 2.0f, height / 2.0f, 0.0f);
 
+  glBindTexture(GL_TEXTURE_2D, ptr->gl_texturePtr);
+
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, ptr->colorArray_);
+
   glBegin(GL_QUADS);
+  glTexCoord2f(0.0f, 0.0f);
+  glVertex2f(0.0f, 0.0f);
+  glTexCoord2f(1.0f, 0.0f);
+  glVertex2f( width , 0.0f);
+  glTexCoord2f(1.0f, 1.0f);
+  glVertex2f( width , -height);
+  glTexCoord2f(0.0f, 1.0f);
+  glVertex2f( 0.0f,  -height);
 
-  // TO DO : Replace vertex drawing with faster method(vertex array or VBO) for
-  // faster rendering.
-  for (GLint y = 0; y < height; ++y)
-  {
-    for (GLint x = 0; x < width ; ++x)
-    {
-      int index = y * width + x;
-      // At this point, the nextGrid array contains the information abou the last generation
-      // of the game.
-      // If the current cell was dead and is revived
-      if (ptr->currentGrid_[index] && !ptr->nextGrid_[index])
-        ptr->colorArray_[index] = color(0, 128, 0);
 
-      // If the cell was alive and died.
-      if (!ptr->currentGrid_[index] && ptr->nextGrid_[index])
-        ptr->colorArray_[index] = color(128, 0, 0);
-      else
-        ptr->colorArray_[index].red > 0 ? ptr->colorArray_[index].red-- : 0;
-
-      // If the cell remains alive.
-      if (ptr->currentGrid_[index])
-        ptr->colorArray_[index].green >= 255 ? ptr->colorArray_[index].green = 255:
-          ptr->colorArray_[index].green++;
-
-      // Update the current color.
-      glColor3ub(ptr->colorArray_[index].red, ptr->colorArray_[index].green,
-          ptr->colorArray_[index].blue);
-      // Draw the vertex.
-      glVertex2f(x, -y - 1);
-      glVertex2f(x + 1, -y - 1);
-      glVertex2f(x + 1, -y);
-      glVertex2f(x, -y);
-    }
-  }
   glEnd();
+  glBindTexture(GL_TEXTURE_2D, 0);
+
   glFlush();
   glutSwapBuffers();
-
 }
 
 void GameOfLife::keyBoardCallBack(unsigned char key, int x, int y)
@@ -423,14 +477,7 @@ void GameOfLife::getNextGenerationWrapper()
   if (ptr->genCnt_ > ptr->maxGenerationNumber_)
     ptr->terminate();
 
-  // gettimeofday(&ptr->startTime, NULL);
   ptr->getNextGeneration();
-  // gettimeofday(&ptr->endTime, NULL);
-
-  // double nextGenTime = (double)((ptr->endTime.tv_usec - ptr->startTime.tv_usec)
-      // /1.0e6 + ptr->endTime.tv_sec - ptr->startTime.tv_sec);
-
-  // std::cout << std::endl << "Next Gen Time = " << nextGenTime << std::endl;
 
   glutPostRedisplay();
   return;
@@ -453,11 +500,10 @@ void GameOfLife::getNextGeneration()
       int livingNeighbors = calcNeighbors(x , left, right,center,up,down);
       nextGrid_[center + x] = livingNeighbors == 3 ||
         (livingNeighbors == 2 && currentGrid_[x + center]) ? 1 : 0;
+      if (displayFlag_)
+        updateColors(x, y);
     }
   }
-  // Set the next generation grid as the current on for the next iteration
-  // of the algorithm.
-  // TO DO : Make into MACRO
   std::swap(currentGrid_, nextGrid_);
   return;
 }
