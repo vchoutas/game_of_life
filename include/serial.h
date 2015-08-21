@@ -1,6 +1,6 @@
 #ifndef SERIAL_H
 #define SERIAL_H
-
+#include "stdlib.h"
 namespace serial
 {
   

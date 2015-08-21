@@ -8,13 +8,13 @@ void getNextGeneration(bool* currGrid,bool* nextGrid,int height,int width)
 {
   for (int y = 0; y < height; ++y)
   {
-    int up = ( (y + height - 1) % height) * width;
-    int center = y * width;
-    int down = ((y + 1) % height) * width;
+    size_t up = ( (y + height - 1) % height) * width;
+    size_t center = y * width;
+    size_t down = ((y + 1) % height) * width;
     for (int x = 0; x < width; ++x)
     {
-      int left = (x + width - 1) % width;
-      int right = (x + 1) % width;
+      size_t left = (x + width - 1) % width;
+      size_t right = (x + 1) % width;
 
       int livingNeighbors = serial::calcNeighbors(currGrid ,x, left, right,center,up,down);
       nextGrid[center + x] = livingNeighbors == 3 ||

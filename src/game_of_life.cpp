@@ -125,16 +125,16 @@ GameOfLife::GameOfLife(std::string fileName):
  */
 void GameOfLife::initDisplay(void)
 {
-  //glutInitWindowSize(windowWidth , windowHeight);
-  //glutInitWindowPosition(0, 0);
-  //windowId_ = glutCreateWindow("Game of Life");
-  //glewInit();
-//
-  //if (!glewIsSupported("GL_VERSION_2_0"))
-  //{
-    //std::cerr << "ERROR: Support for necessary OpenGL extensions missing." << std::endl;
-    //std::exit(-1);
-  //}
+  glutInitWindowSize(windowWidth , windowHeight);
+  glutInitWindowPosition(0, 0);
+  windowId_ = glutCreateWindow("Game of Life");
+  glewInit();
+
+  if (!glewIsSupported("GL_VERSION_2_0"))
+  {
+    std::cerr << "ERROR: Support for necessary OpenGL extensions missing." << std::endl;
+    std::exit(-1);
+  }
 
   glutReportErrors();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
