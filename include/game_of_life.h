@@ -55,8 +55,6 @@ class GameOfLife
     void initColorArray(void);
 
     void initTexture(void);
-      
-    bool* getGrid(void);
     
   private:
     static GameOfLife* ptr;
