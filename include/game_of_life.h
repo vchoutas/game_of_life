@@ -2,7 +2,7 @@
 #define GAME_OF_LIFE_H
 
 #include "utilities.h"
-
+#include "serial.h"
 #ifdef __APPLE__
 #  include <OpenGL/gl.h>
 #  include <OpenGL/glu.h>
@@ -34,7 +34,6 @@ class GameOfLife
     }
 
     // The function that calculates the number of living neighbors cells.
-    inline int calcNeighbors(int x, int left, int right, int center, int up , int down);
 
     bool parseConfigFile(std::string fileName);
 
@@ -51,13 +50,14 @@ class GameOfLife
     static void keyBoardCallBack(unsigned char key, int x, int y);
     // The function that gets the next generation of the game.
     static void getNextGenerationWrapper();
-    void getNextGeneration();
 
     void updateColors(int x, int y);
     void initColorArray(void);
 
     void initTexture(void);
-
+      
+    bool* getGrid(void);
+    
   private:
     static GameOfLife* ptr;
     int width_;

@@ -120,23 +120,21 @@ GameOfLife::GameOfLife(std::string fileName):
 }
 
 
-
-
 /**
  * @brief Initialize all the functions used for displaying the grid.
  */
 void GameOfLife::initDisplay(void)
 {
-  glutInitWindowSize(windowWidth , windowHeight);
-  glutInitWindowPosition(0, 0);
-  windowId_ = glutCreateWindow("Game of Life");
-  glewInit();
-
-  if (!glewIsSupported("GL_VERSION_2_0"))
-  {
-    std::cerr << "ERROR: Support for necessary OpenGL extensions missing." << std::endl;
-    std::exit(-1);
-  }
+  //glutInitWindowSize(windowWidth , windowHeight);
+  //glutInitWindowPosition(0, 0);
+  //windowId_ = glutCreateWindow("Game of Life");
+  //glewInit();
+//
+  //if (!glewIsSupported("GL_VERSION_2_0"))
+  //{
+    //std::cerr << "ERROR: Support for necessary OpenGL extensions missing." << std::endl;
+    //std::exit(-1);
+  //}
 
   glutReportErrors();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -286,8 +284,10 @@ void GameOfLife::play()
   if (!displayFlag_)
   {
     gettimeofday(&startTime, NULL);
-    for (int i = 0; i < maxGenerationNumber_; ++i)
-      getNextGeneration();
+    for (int i = 0; i < maxGenerationNumber_; ++i){
+      serial::getNextGeneration(currentGrid_,nextGrid_,height_,width_);
+      genCnt_++;
+    }
     gettimeofday(&endTime, NULL);
     double execTime = (double)((endTime.tv_usec - startTime.tv_usec)
         /1.0e6 + endTime.tv_sec - startTime.tv_sec);
@@ -466,6 +466,9 @@ void GameOfLife::terminate()
   return;
 }
 
+bool* GameOfLife::getGrid(){
+  return currentGrid_;
+  }
 void GameOfLife::getNextGenerationWrapper()
 {
   if (ptr == NULL)
@@ -474,45 +477,14 @@ void GameOfLife::getNextGenerationWrapper()
       << std::endl;
     std::exit(-1);
   }
+  
   if (ptr->genCnt_ > ptr->maxGenerationNumber_)
     ptr->terminate();
-
-  ptr->getNextGeneration();
-
+  
+  serial::getNextGeneration(ptr->currentGrid_,ptr->nextGrid_,ptr->height_,ptr->width_);
+  ptr->genCnt_++;
+  
   glutPostRedisplay();
   return;
 }
 
-
-void GameOfLife::getNextGeneration()
-{
-  genCnt_++;
-  for (int y = 0; y < height_; ++y)
-  {
-    size_t up = ( (y + height_ - 1) % height_) * width_;
-    size_t center = y * width_;
-    size_t down = ((y + 1) % height_) * width_;
-    for (int x = 0; x < width_; ++x)
-    {
-      size_t left = (x + width_ - 1) % width_;
-      size_t right = (x + 1) % width_;
-
-      int livingNeighbors = calcNeighbors(x , left, right,center,up,down);
-      nextGrid_[center + x] = livingNeighbors == 3 ||
-        (livingNeighbors == 2 && currentGrid_[x + center]) ? 1 : 0;
-      if (displayFlag_)
-        updateColors(x, y);
-    }
-  }
-  std::swap(currentGrid_, nextGrid_);
-  return;
-}
-
-int GameOfLife::calcNeighbors(int x, int left, int right, int center,
-    int up, int down)
-{
-  return currentGrid_[left + up] + currentGrid_[x + up]
-      + currentGrid_[right + up] + currentGrid_[left + center]
-      + currentGrid_[right + center] + currentGrid_[left + down]
-      + currentGrid_[x + down] + currentGrid_[right + down];
-}

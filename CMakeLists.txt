@@ -4,7 +4,7 @@ project(game_of_life)
 find_package(CUDA)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
-find_package(GLEW REQUIRED)
+find_package(GLEW )
 
 # Pass options to NVCC
 if (${CUDA_FOUND})
@@ -26,6 +26,10 @@ if(${OPENGL_FOUND})
     src/utilities.cpp)
   target_link_libraries(${PROJECT_NAME}_utils
     ${OPENGL_LIBRARIES})
+    
+  add_library(${PROJECT_NAME}_serial
+    src/serial.cpp)
+  
 
   if(${CUDA_FOUND})
     cuda_add_library(${PROJECT_NAME}_simple_cuda_lib
@@ -41,11 +45,11 @@ if(${OPENGL_FOUND})
     )
   target_link_libraries(${PROJECT_NAME}_serial_lib
     ${PROJECT_NAME}_utils
+    ${PROJECT_NAME}_serial
     ${OPENGL_LIBRARIES}
     ${GLUT_LIBRARY}
     ${GLEW_LIBRARY}
     )
-
   if(${CUDA_FOUND})
     cuda_add_executable(${PROJECT_NAME}.exe
       src/cuda_main.cpp)
@@ -58,6 +62,11 @@ if(${OPENGL_FOUND})
     target_link_libraries(${PROJECT_NAME}.exe
       ${PROJECT_NAME}_serial_lib
       )
+    #add_executable(test.exe
+      #src/test.cpp)
+    #target_link_libraries(test.exe
+      #${PROJECT_NAME}_serial
+      #)
   endif()
 
 endif()
