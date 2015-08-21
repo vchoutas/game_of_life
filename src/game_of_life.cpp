@@ -287,6 +287,7 @@ void GameOfLife::play()
     for (int i = 0; i < maxGenerationNumber_; ++i){
       serial::getNextGeneration(currentGrid_,nextGrid_,height_,width_);
       genCnt_++;
+      std::swap(currentGrid_,nextGrid_);
     }
     gettimeofday(&endTime, NULL);
     double execTime = (double)((endTime.tv_usec - startTime.tv_usec)
@@ -480,7 +481,9 @@ void GameOfLife::getNextGenerationWrapper()
   
   serial::getNextGeneration(ptr->currentGrid_,ptr->nextGrid_,ptr->height_,ptr->width_);
   ptr->genCnt_++;
-  
+  bool* temp = ptr->currentGrid_;
+  ptr->currentGrid_= ptr->nextGrid_;
+  ptr->nextGrid_=temp;
   glutPostRedisplay();
   return;
 }

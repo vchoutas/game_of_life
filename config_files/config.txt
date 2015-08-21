@@ -11,7 +11,7 @@ boardFileName /home/vchoutas/Programming/Parallel/game_of_life/bin/table500x500.
 display true
 
 # The maximum number of generations for the game.
-generationNumber 1000
+generationNumber 10
 
 # Output File to write the grid for the final generation
 outputFile output.bin
