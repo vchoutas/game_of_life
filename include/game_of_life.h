@@ -50,8 +50,10 @@ class GameOfLife
     static void keyBoardCallBack(unsigned char key, int x, int y);
     // The function that gets the next generation of the game.
     static void getNextGenerationWrapper();
-
+    
+    
     void updateColors(int x, int y);
+    void updateGrid();
     void initColorArray(void);
 
     void initTexture(void);

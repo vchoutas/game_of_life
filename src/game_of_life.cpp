@@ -355,6 +355,14 @@ void GameOfLife::updateColors(int x, int y)
       colorArray_[colorIndex + 1]++;
   return;
 }
+void GameOfLife::updateGrid()
+{ 
+  for (int y = 0; y < height_; ++y){
+    for (int x = 0; x < width_; ++x){
+      updateColors(x,y);
+    }
+  }
+}
 
 void GameOfLife::display()
 {
@@ -481,9 +489,11 @@ void GameOfLife::getNextGenerationWrapper()
   
   serial::getNextGeneration(ptr->currentGrid_,ptr->nextGrid_,ptr->height_,ptr->width_);
   ptr->genCnt_++;
-  bool* temp = ptr->currentGrid_;
-  ptr->currentGrid_= ptr->nextGrid_;
-  ptr->nextGrid_=temp;
+  //bool* temp = ptr->currentGrid_;
+//  ptr->nextGrid_=temp;
+  ptr->updateGrid();
+  std::swap(ptr->currentGrid_, ptr->nextGrid_);
+  
   glutPostRedisplay();
   return;
 }
