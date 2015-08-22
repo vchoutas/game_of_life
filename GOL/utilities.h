@@ -12,6 +12,19 @@
 #define GENERATIONS 10
 
 
+#define SWAP(x, y) do {typeof(x) SWAP = x; x = y; y = SWAP; } while(0)
+
+#define cudaCheckErrors(msg) \
+  do { \
+    cudaError_t __err = cudaGetLastError(); \
+    if (__err != cudaSuccess) { \
+      fprintf(stderr, "Fatal error: %s (%s at %s:%d)\n", \
+          msg, cudaGetErrorString(__err), \
+          __FILE__, __LINE__); \
+      exit(1); \
+    } \
+  } while (0)
+
 namespace utilities
 {
   void read_from_file(bool *X, std::string filename, size_t N);

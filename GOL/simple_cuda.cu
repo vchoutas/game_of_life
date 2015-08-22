@@ -2,78 +2,68 @@
 #include <fstream>
 #include <sstream>
 #include <stdio.h>
-//#include "simple_cuda.cuh"
-
+#include <iostream>
+#include "simple_cuda.cuh"
 #define MAXBLOCKS 65535
 
-SimpleCudaGol::SimpleCudaGoL(*int Grid,int height,int max_gen){
+void simple_cuda(bool* startingGrid, int N,int max_gen)
+{
+  std::cout << "Starting to play!" << std::endl;
+  const size_t arraySize = N* N;
 
-  this->height_= height;
-  this->width_= height;
-  this->maxGenerationNumber_ = max_gen;
-  this->arraySize_ = height*height;
+  bool* currentGridDevice;
+  bool* nextGridDevice;
 
-  //cudaMalloc((void**) &currentGridDevice_, arraySize_);
+  bool* finalGrid = new bool[N * N];
+
+  cudaMalloc((void**) &currentGridDevice, arraySize);
   cudaCheckErrors("Device memory Allocation Error!");
 
-  cudaMalloc((void**) &nextGridDevice_, arraySize);
+  cudaMalloc((void**) &nextGridDevice, arraySize);
   cudaCheckErrors("Device memory Allocation Error!");
 
   if (currentGridDevice == NULL || nextGridDevice == NULL)
   {
     std::cout << "Unable to allocate Device Memory!" << std::endl;
-    terminate();
   }
 
- cudaMemcpy(currentGridDevice,Grid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
-  std::cout << "Cuda iterface initialized" << std::endl;
+  dim3 threadNum(16, 16);
+  dim3 blocks(N / threadNum.x + 1, N / threadNum.y + 1);
+
+  cudaEvent_t startTimeDevice, endTimeDevice;
+  cudaEventCreate(&startTimeDevice);
+  cudaCheckErrors("Event Initialization Error");
+  cudaEventCreate(&endTimeDevice);
+  cudaCheckErrors("Event Initialization Error");
+
+  cudaEventRecord(startTimeDevice, 0);
+  /* Copy the initial grid to the device. */
+  cudaMemcpy(currentGridDevice,startingGrid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
+  for (int i = 0; i < max_gen; ++i)
+  {
+    // Copy the Contents of the current and the next grid
+    simpleNextGenerationKernel<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice, N);
+    cudaCheckErrors("Exec Error");
+    SWAP(currentGridDevice, nextGridDevice);
+  }
+  // Copy the final grid back to the host memory.
+  cudaMemcpy(finalGrid, currentGridDevice, arraySize * sizeof(bool), cudaMemcpyDeviceToHost);
+
+  cudaEventRecord(endTimeDevice, 0);
+  cudaEventSynchronize(endTimeDevice);
+
+  float time;
+  cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
+  std::cout << "GPU Execution Time is = " << time / 1000.0f  << std::endl;
+
+  cudaFree(currentGridDevice);
+  cudaFree(nextGridDevice);
+  cudaDeviceReset();
+
+  delete[] startingGrid;
+  std::cout << "Finished playing the game of Life!" << std::endl;
 }
 
-
-void SimpleCudaGoL::play()
-{
-   int x;
-  //dim3 dimBlock( blocksize, blocksize );
-  //dim3 dimGrid( N/dimBlock.x, N/dimBlock.y );
-//
-  //std::cout << "Starting Cuda playing !" << std::endl;
-//
-  //struct timeval startTime, endTime;
-  //gettimeofday(&startTime, NULL);
-
-  //cudaEvent_t startTimeDevice, endTimeDevice;
-  /* gettimeofday(&startTime, NULL);*/
-  //cudaEventCreate(&startTimeDevice);
-  //cudaCheckErrors("Event Initialization Error");
-  //cudaEventCreate(&endTimeDevice);
-  //cudaCheckErrors("Event Initialization Error");
-  //
-  //cudaEventRecord(startTimeDevice, 0);y
-  //tempGrid = new bool[width_ * height_];//Will be used only for final counting ;
-//
-  //for (int i = 0; i < maxGenerationNumber_; ++i)
-  //{
-    //simpleNextGenerationKernel<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice, width_);
-    //cudaCheckErrors("Exec Error");
-    //std:swap(currentGridDevice, nextGridDevice);
-  //}
-  //cudaMemcpy(tempcopy, currentGridDevice, height_*height_ * sizeof(bool), cudaMemcpyDeviceToHost);
-   //Copy the final grid back to the host memory.
-  //cudaEventRecord(endTimeDevice, 0);
-  //cudaEventSynchronize(endTimeDevice);
-
-
-  //cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  //std::cout << "GPU Execution Time is = " << time / 1000.0f  << std::endl;
-  //std::cout << " GPU Time = " << << std::endl;
-
-//
-  //cudaFree(currentGridDevice);
-  //cudaFree(nextGridDevice);
-  //cudaDeviceReset();
-//
-  //delete[] tempGrid;
-}
 
 __global__ void simpleNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N)
 {
@@ -105,15 +95,4 @@ __device__ int calcNeighborsKernel(bool* currentGrid, int x, int left, int right
       + currentGrid[right + up] + currentGrid[left + center]
       + currentGrid[right + center] + currentGrid[left + down]
       + currentGrid[x + down] + currentGrid[right + down];
-}
-
-
-
-void SimpleCudaGoL::terminate()
-{
-  std::cout << "Terminating cuda GOL!" << std::endl;
-  delete[] currentGridDevice;
-  delete[] nextGridDevice;
-  std::exit(0);
-  return;
 }
