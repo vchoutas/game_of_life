@@ -6,15 +6,12 @@
 #include "simple_cuda.cuh"
 #define MAXBLOCKS 65535
 
-void simple_cuda(bool* startingGrid, int N,int max_gen)
+void simple_cuda(bool* startingGrid, bool* finalGrid, int N, int maxGen)
 {
-  std::cout << "Starting to play!" << std::endl;
   const size_t arraySize = N* N;
 
   bool* currentGridDevice;
   bool* nextGridDevice;
-
-  bool* finalGrid = new bool[N * N];
 
   cudaMalloc((void**) &currentGridDevice, arraySize);
   cudaCheckErrors("Device memory Allocation Error!");
@@ -25,6 +22,7 @@ void simple_cuda(bool* startingGrid, int N,int max_gen)
   if (currentGridDevice == NULL || nextGridDevice == NULL)
   {
     std::cout << "Unable to allocate Device Memory!" << std::endl;
+    return;
   }
 
   dim3 threadNum(16, 16);
@@ -39,7 +37,7 @@ void simple_cuda(bool* startingGrid, int N,int max_gen)
   cudaEventRecord(startTimeDevice, 0);
   /* Copy the initial grid to the device. */
   cudaMemcpy(currentGridDevice,startingGrid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
-  for (int i = 0; i < max_gen; ++i)
+  for (int i = 0; i < maxGen; ++i)
   {
     // Copy the Contents of the current and the next grid
     simpleNextGenerationKernel<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice, N);
@@ -60,10 +58,8 @@ void simple_cuda(bool* startingGrid, int N,int max_gen)
   cudaFree(nextGridDevice);
   cudaDeviceReset();
 
-  delete[] startingGrid;
-  std::cout << "Finished playing the game of Life!" << std::endl;
+  return;
 }
-
 
 __global__ void simpleNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N)
 {
@@ -96,3 +92,4 @@ __device__ int calcNeighborsKernel(bool* currentGrid, int x, int left, int right
       + currentGrid[right + center] + currentGrid[left + down]
       + currentGrid[x + down] + currentGrid[right + down];
 }
+

@@ -21,6 +21,23 @@ namespace utilities
 
   }
 
+  bool readFile(bool *X, std::string filename, size_t N)
+  {
+    FILE *fp = fopen(filename.c_str(), "r+");
+    if (fp == NULL)
+    {
+      printf("Invalid File Name!\n");
+      return false;
+    }
+
+    int size = fread(X, sizeof(bool), N * N, fp);
+
+    printf("Elements: %d\n", size);
+
+    fclose(fp);
+    return true;
+  }
+
   void generate_table(bool *X, size_t N){
     srand(time(NULL));
     int counter = 0;
@@ -35,7 +52,6 @@ namespace utilities
     std::cout << "Number of non zerow elements: " << counter << std::endl;
     std::cout << "Percent: " << (float)counter / (float)(N*N) << std::endl;
   }
-
 
   void save_table(bool *X, size_t N){
 
@@ -54,8 +70,7 @@ namespace utilities
     fclose(fp);
 
   }
-  
- 
+
 int count(bool* currGrid,int height,int width)
 {
   int counter = 0;
@@ -67,11 +82,9 @@ int count(bool* currGrid,int height,int width)
   }
   std::cout << "Number of alive cells: " << counter << std::endl;
   std::cout << "Percent: " << (float)counter / (float)(width*height) << std::endl;
-  
-  return counter;
-  
-  }
-  
 
+  return counter;
+
+  }
 
 } // namespace utilities
