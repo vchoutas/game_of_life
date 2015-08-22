@@ -22,7 +22,7 @@ simple_cuda.o: simple_cuda.cu simple_cuda.cuh
 	$(compiler) -c simple_cuda.cu $(NVCCFlags)
 utilities.o: utilities.cpp utilities.h
 	$(compiler) -c utilities.cpp $(NVCCFlags)
-run: $(TARGET)
+run: $(TARGET).out
 	./$(TARGET).out $(filename) $(N) $(maxGen)
 clean:
 	rm -f *~ *.o

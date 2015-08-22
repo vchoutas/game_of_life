@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
   }
   memcpy(serialStartingGrid, startingGrid, N * N * sizeof(bool));
   serial::execSerial(serialStartingGrid, finalSerialGrid, N, maxGen);
-
+  utilities::count(finalSerialGrid,N,N);
   bool* simpleGpuStartingGrid = new bool[N * N];
   bool* simpleGpuFinalGrid = new bool[N * N];
   if (simpleGpuStartingGrid == NULL)
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
   }
   memcpy(simpleGpuStartingGrid, startingGrid, N * N * sizeof(bool));
   simple_cuda(simpleGpuStartingGrid, simpleGpuFinalGrid, N, maxGen);
-
+  utilities::count(simpleGpuFinalGrid,N,N);
 
   delete[] startingGrid;
   delete[] serialStartingGrid;
