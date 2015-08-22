@@ -62,11 +62,11 @@ if(${OPENGL_FOUND})
     target_link_libraries(${PROJECT_NAME}.exe
       ${PROJECT_NAME}_serial_lib
       )
-    #add_executable(test.exe
-      #src/test.cpp)
-    #target_link_libraries(test.exe
-      #${PROJECT_NAME}_serial
-      #)
+    add_executable(test.exe
+      src/test.cpp)
+    target_link_libraries(test.exe
+      ${PROJECT_NAME}_serial
+      )
   endif()
 
 endif()
