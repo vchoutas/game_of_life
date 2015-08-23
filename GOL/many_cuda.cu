@@ -26,8 +26,8 @@ void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
     return;
   }
 
-  dim3 threadNum(128);
-  dim3 blocks(N / (threadNum.x * CELLPERTHR) + 1);
+  dim3 threadNum(256);
+  dim3 blocks(std::min(N * N / threadNum.x + 1, (unsigned int)MAXBLOCKS));
 
   cudaEvent_t startTimeDevice, endTimeDevice;
   cudaEventCreate(&startTimeDevice);
@@ -53,7 +53,7 @@ void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::cout << "(Many thread)GPU Execution Time is = " << time / 1000.0f  << std::endl;
+  std::cout << std::endl << "(Many thread)GPU Execution Time is = " << time / 1000.0f  << std::endl;
 
   cudaFree(currentGridDevice);
   cudaFree(nextGridDevice);
@@ -78,9 +78,11 @@ __global__ void manyNextGenerationKernel(bool* currentGrid, bool* nextGrid, int 
     size_t yAbsUp = (yAbs + worldSize - N) % worldSize;
     size_t yAbsDown = (yAbs + N) % worldSize;
 
-    size_t aliveCells = currentGrid[xLeft + yAbsUp] + currentGrid[x + yAbsUp]
-      + currentGrid[xRight + yAbsUp] + currentGrid[xLeft + yAbs] + currentGrid[xRight + yAbs]
-      + currentGrid[xLeft + yAbsDown] + currentGrid[x + yAbsDown] + currentGrid[xRight + yAbsDown];
+    /* size_t aliveCells = currentGrid[xLeft + yAbsUp] + currentGrid[x + yAbsUp] */
+      /* + currentGrid[xRight + yAbsUp] + currentGrid[xLeft + yAbs] + currentGrid[xRight + yAbs] */
+      /* + currentGrid[xLeft + yAbsDown] + currentGrid[x + yAbsDown] + currentGrid[xRight + yAbsDown]; */
+    size_t aliveCells = manycalcNeighborsKernel(currentGrid, x, xLeft, xRight, yAbs,
+        yAbsUp,  yAbsDown);
 
     nextGrid[x + yAbs] =
       aliveCells == 3 || (aliveCells == 2 && currentGrid[x + yAbs]) ? 1 : 0;
