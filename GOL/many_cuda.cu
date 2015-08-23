@@ -26,8 +26,8 @@ void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
     return;
   }
 
-  dim3 threadNum(16, 16);
-  dim3 blocks(N / (threadNum.x*CELLPERTHR) + 1, N / (threadNum.y*CELLPERTHR) + 1);
+  dim3 threadNum(128);
+  dim3 blocks(N / (threadNum.x * CELLPERTHR) + 1);
 
   cudaEvent_t startTimeDevice, endTimeDevice;
   cudaEventCreate(&startTimeDevice);

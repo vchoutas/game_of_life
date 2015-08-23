@@ -9,6 +9,7 @@ __global__ void simpleNextGenerationKernel(bool* currentGrid, bool* nextGrid, co
 __device__ inline int calcNeighborsKernel(bool* currentGrid, int x, int left, int right, int center, int up , int down);
 void simple_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen);
 void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen);
-__global__ void simpleNextGenerationKernelPitch(bool* currentGrid, bool* nextGrid, int N, size_t pitch);
+__global__ void simpleNextGenerationKernelPitch(bool* currentGrid, bool* nextGrid, int N,
+    size_t currentGridPitch, size_t nextGridPitch);
 
 #endif // SIMPLE_CUDA_GOL_H

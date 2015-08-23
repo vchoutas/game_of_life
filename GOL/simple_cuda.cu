@@ -69,14 +69,11 @@ void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen)
   size_t pitchStart;
   size_t pitchDest;
 
-  cudaMallocPitch((void**) &currentGridDevice, &pitchStart, N, N);
+  cudaMallocPitch((void**) &currentGridDevice, &pitchStart, N * sizeof(bool), N);
   cudaCheckErrors("Device memory Allocation Error!");
 
-  cudaMallocPitch((void**) &nextGridDevice, &pitchDest, N, N);
+  cudaMallocPitch((void**) &nextGridDevice, &pitchDest, N * sizeof(bool), N);
   cudaCheckErrors("Device memory Allocation Error!");
-
-  std::cout << "Pitch start " << pitchStart << std::endl;
-  std::cout << "Pitch dest " << pitchDest << std::endl;
 
   if (currentGridDevice == NULL || nextGridDevice == NULL)
   {
@@ -95,23 +92,28 @@ void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   cudaEventRecord(startTimeDevice, 0);
   /* Copy the initial grid to the device. */
-  cudaMemcpy2D(currentGridDevice, pitchStart, *startingGrid, N * sizeof(bool), N, N, cudaMemcpyHostToDevice);
+  cudaMemcpy2D(currentGridDevice, pitchStart, *startingGrid, N * sizeof(bool), N * sizeof(bool)
+      , N, cudaMemcpyHostToDevice);
+  cudaCheckErrors("Initial Memcpy 2D Error");
   for (int i = 0; i < maxGen; ++i)
   {
     // Copy the Contents of the current and the next grid
-    simpleNextGenerationKernelPitch<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice, N, pitchStart);
+    simpleNextGenerationKernelPitch<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice, N, pitchStart,
+        pitchDest);
     cudaCheckErrors("Exec Error");
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
-  cudaMemcpy2D(*finalGrid, pitchDest, currentGridDevice, pitchStart, N, N, cudaMemcpyDeviceToHost);
+  cudaMemcpy2D(*finalGrid, N * sizeof(bool), currentGridDevice, pitchStart, N * sizeof(bool),
+      N, cudaMemcpyDeviceToHost);
+  cudaCheckErrors("Final Memcpy 2D Error");
 
   cudaEventRecord(endTimeDevice, 0);
   cudaEventSynchronize(endTimeDevice);
 
   float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::cout << "GPU Execution Time is = " << time / 1000.0f  << std::endl;
+  std::cout << "Pitch GPU Execution Time is = " << time / 1000.0f  << std::endl;
 
   cudaFree(currentGridDevice);
   cudaFree(nextGridDevice);
@@ -143,7 +145,8 @@ __global__ void simpleNextGenerationKernel(bool* currentGrid, bool* nextGrid, in
   return;
 }
 
-__global__ void simpleNextGenerationKernelPitch(bool* currentGrid, bool* nextGrid, int N, size_t pitch)
+__global__ void simpleNextGenerationKernelPitch(bool* currentGrid, bool* nextGrid, int N,
+    size_t currentGridPitch, size_t nextGridPitch)
 {
   int col = blockIdx.x * blockDim.x + threadIdx.x;
   int row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -151,17 +154,26 @@ __global__ void simpleNextGenerationKernelPitch(bool* currentGrid, bool* nextGri
   if (index > N * N)
     return;
 
-  int x = index % N;
-  int y = (index - x) / N;
-  size_t up = ( (y + N - 1) % N) * N;
-  size_t center = y * N;
-  size_t down = ((y + 1) % N) * N;
-  size_t left = (x + N - 1) % N;
-  size_t right = (x + 1) % N;
+  bool* currentRow = (bool*)((char*)currentGrid + row * currentGridPitch);
 
-  int livingNeighbors = calcNeighborsKernel(currentGrid, x, left, right, center, up, down);
-  nextGrid[center + x] = livingNeighbors == 3 ||
-    (livingNeighbors == 2 && currentGrid[x + center]) ? 1 : 0;
+  // The row above the current one.
+  size_t up = (row + N - 1) % N;
+  bool* previousRow = (bool*)((char*)currentGrid + up * currentGridPitch);
+  // The row below the current one.
+  size_t down = (row + 1) % N;
+  bool* nextRow = (bool*)((char*)currentGrid + down * currentGridPitch);
+  // Get the index for the left column
+  size_t left = (col + N - 1) % N;
+  // Get the index of the right column
+  size_t right = (col + 1) % N;
+
+
+  int livingNeighbors = previousRow[left] + previousRow[col] + previousRow[right]
+    + currentRow[left] + currentRow[right] + nextRow[left] + nextRow[col] + nextRow[right];
+
+  bool* nextGridRow = (bool*)((char*)nextGrid + row * nextGridPitch);
+  nextGridRow[col] = livingNeighbors == 3 ||
+    (livingNeighbors == 2 && currentRow[col]) ? 1 : 0;
 
   return;
 }

@@ -79,6 +79,22 @@ int main(int argc, char *argv[])
   many_cuda(&manyGpuStartingGrid, &manyGpuFinalGrid, N, maxGen);
   utilities::count(manyGpuFinalGrid,N,N);
 
+  bool* simpleGpuPitchStartingGrid = new bool[N * N];
+  bool* simpleGpuPitchFinalGrid = new bool[N * N];
+  if (simpleGpuPitchStartingGrid == NULL)
+  {
+    std::cout << "Could not allocate memory for the initial grid array(simple gpu version)!" << std::endl;
+    return -1;
+  }
+  if (simpleGpuPitchFinalGrid == NULL)
+  {
+    std::cout << "Could not allocate memory for the final grid array(simple gpu version)!" << std::endl;
+    return -1;
+  }
+  memcpy(simpleGpuPitchStartingGrid, startingGrid, N * N * sizeof(bool));
+  simpleCudaPitch(&simpleGpuPitchStartingGrid, &simpleGpuPitchFinalGrid, N, maxGen);
+  utilities::count(simpleGpuPitchFinalGrid, N, N);
+
 
   delete[] startingGrid;
   delete[] serialStartingGrid;
@@ -87,5 +103,7 @@ int main(int argc, char *argv[])
   delete[] simpleGpuFinalGrid;
   delete[] manyGpuStartingGrid;
   delete[] manyGpuFinalGrid;
+  delete[] simpleGpuPitchStartingGrid;
+  delete[] simpleGpuPitchFinalGrid;
   return 0;
 }
