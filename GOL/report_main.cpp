@@ -1,9 +1,9 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
-
 #include "serial.h"
 #include "simple_cuda.cuh"
+#include "many_cuda.cuh"
 
 int main(int argc, char *argv[])
 {
@@ -62,9 +62,30 @@ int main(int argc, char *argv[])
   utilities::count(simpleGpuFinalGrid, N, N);
 
 
+
+  bool* manyGpuStartingGrid = new bool[N * N];
+  bool* manyGpuFinalGrid = new bool[N * N];
+  if (manyGpuStartingGrid == NULL)
+  {
+    std::cout << "Could not allocate memory for the initial grid array(many gpu version)!" << std::endl;
+    return -1;
+  }
+  if (manyGpuFinalGrid == NULL)
+  {
+    std::cout << "Could not allocate memory for the final grid array(many gpu version)!" << std::endl;
+    return -1;
+  }
+  memcpy(manyGpuStartingGrid, startingGrid, N * N * sizeof(bool));
+  many_cuda(&manyGpuStartingGrid, &manyGpuFinalGrid, N, maxGen);
+  utilities::count(manyGpuFinalGrid,N,N);
+
+
   delete[] startingGrid;
   delete[] serialStartingGrid;
   delete[] finalSerialGrid;
   delete[] simpleGpuStartingGrid;
+  delete[] simpleGpuFinalGrid;
+  delete[] manyGpuStartingGrid;
+  delete[] manyGpuFinalGrid;
   return 0;
 }
