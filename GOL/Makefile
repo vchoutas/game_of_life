@@ -25,5 +25,5 @@ utilities.o: utilities.cpp utilities.h
 run: $(TARGET).out
 	./$(TARGET).out $(filename) $(N) $(maxGen)
 clean:
-	rm -f *~ *.o
+	rm -f *~ *.o *.out
 

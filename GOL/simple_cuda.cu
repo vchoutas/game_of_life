@@ -6,7 +6,7 @@
 #include "simple_cuda.cuh"
 #define MAXBLOCKS 65535
 
-void simple_cuda(bool* startingGrid, bool* finalGrid, int N, int maxGen)
+void simple_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 {
   const size_t arraySize = N* N;
 
@@ -36,7 +36,7 @@ void simple_cuda(bool* startingGrid, bool* finalGrid, int N, int maxGen)
 
   cudaEventRecord(startTimeDevice, 0);
   /* Copy the initial grid to the device. */
-  cudaMemcpy(currentGridDevice,startingGrid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
+  cudaMemcpy(currentGridDevice, *startingGrid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
   for (int i = 0; i < maxGen; ++i)
   {
     // Copy the Contents of the current and the next grid
@@ -45,7 +45,7 @@ void simple_cuda(bool* startingGrid, bool* finalGrid, int N, int maxGen)
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
-  cudaMemcpy(finalGrid, currentGridDevice, arraySize * sizeof(bool), cudaMemcpyDeviceToHost);
+  cudaMemcpy(*finalGrid, currentGridDevice, arraySize * sizeof(bool), cudaMemcpyDeviceToHost);
 
   cudaEventRecord(endTimeDevice, 0);
   cudaEventSynchronize(endTimeDevice);

@@ -13,8 +13,6 @@
 
 #define SWAP(x, y) do {typeof(x) SWAP = x; x = y; y = SWAP; } while(0)
 
-#define SWAP(x, y) do {typeof(x) SWAP = x; x = y; y = SWAP; } while(0)
-
 #define cudaCheckErrors(msg) \
   do { \
     cudaError_t __err = cudaGetLastError(); \

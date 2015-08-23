@@ -34,17 +34,17 @@ int calcNeighbors(bool* currGrid, int x, int left, int right, int center,
       + currGrid[x + down] + currGrid[right + down];
 }
 
-void execSerial(bool* startingGrid, bool* finalGrid, int N, int maxGen)
+void execSerial(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 {
   struct timeval startTime, endTime;
   gettimeofday(&startTime, NULL);
   for (int i = 0; i < maxGen; ++i)
   {
-    getNextGeneration(startingGrid, finalGrid, N, N);
-    SWAP(startingGrid, finalGrid);
+    getNextGeneration(*startingGrid, *finalGrid, N, N);
+    SWAP(*startingGrid, *finalGrid);
   }
   // Swap the pointers so that the final table is in the finalGrid pointer.
-  SWAP(startingGrid, finalGrid);
+  SWAP(*startingGrid, *finalGrid);
   gettimeofday(&endTime, NULL);
 
   double serialExecTime = (double)((endTime.tv_usec - startTime.tv_usec)

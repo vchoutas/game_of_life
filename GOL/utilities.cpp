@@ -71,20 +71,19 @@ namespace utilities
 
   }
 
-int count(bool* currGrid,int height,int width)
-{
-  int counter = 0;
-  std::cout<<"Counting cells...."<<std::endl;
-  for (int y = 0; y < height; ++y){
-    for (int x = 0; x < width; ++x){
-      counter+= currGrid[y*width + x];//Counting the cells;
+  int count(bool* currGrid, int height, int width)
+  {
+    int counter = 0;
+    std::cout << "Counting cells...." << std::endl;
+    for (int y = 0; y < height; ++y){
+      for (int x = 0; x < width; ++x){
+        counter += currGrid[y * width + x]; //Counting the cells;
       }
-  }
-  std::cout << "Number of alive cells: " << counter << std::endl;
-  std::cout << "Percent: " << (float)counter / (float)(width*height) << std::endl;
+    }
+    std::cout << "Number of alive cells: " << counter << std::endl;
+    std::cout << "Percent: " << (float)counter / (float)(width * height) << std::endl;
 
-  return counter;
-
+    return counter;
   }
 
 } // namespace utilities
