@@ -52,6 +52,22 @@ namespace utilities
     std::cout << "Number of non zerow elements: " << counter << std::endl;
     std::cout << "Percent: " << (float)counter / (float)(N*N) << std::endl;
   }
+  void generate_ghost_table(bool *Grid,bool *GhostGrid, size_t N){
+
+
+   for(size_t i=0; i<N+2; i++){
+      for(size_t j=0; j<N+2; j++){
+        GhostGrid[ i * N + j] = 0;
+      }
+    }
+    for(size_t i=0; i<N; i++){
+      for(size_t j=0; j<N; j++){
+        GhostGrid[ (i+1) * (N+2) + j+1] = Grid[i*N + j];
+      }
+    }
+
+    std::cout<<"Ghost grid  created"<<std::endl;
+}
 
   void save_table(bool *X, size_t N){
 
@@ -86,5 +102,36 @@ namespace utilities
 
     return counter;
   }
+
+  int countGhost(bool* currGrid, int height, int width)
+  {
+    int counter = 0;
+    std::cout << "Counting cells...." << std::endl;
+    for (int y = 1; y < height+1; ++y){
+      for (int x = 1; x < width+1; ++x){
+        counter += currGrid[y * (width+2) + x]; //Counting the cells;
+      }
+    }
+    std::cout << "Number of alive cells: " << counter << std::endl;
+    std::cout << "Percent: " << (float)counter / (float)(width * height) << std::endl;
+
+    return counter;
+  }
+
+  void print(bool* grid,size_t N )
+   {
+     std::cout<<std::endl;
+      if ( N< 20){
+       for ( int y =0 ; y<N;y++)
+       {
+         for (int x = 0;x<N;x++)
+         {
+           std::cout<<grid[y*N + x];
+         }
+         std::cout<<std::endl;
+       }
+     }
+     std::cout<<std::endl;
+   }
 
 } // namespace utilities

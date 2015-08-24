@@ -13,7 +13,7 @@ all: main.o serial.o utilities.o simple_cuda.o many_cuda.o
 test: test.o serial.o
 	$(compiler) -o $(TARGET)_test.exe test.o serial.o
 main.o: report_main.cpp
-	$(compiler) -c report_main.cpp $(NVCCFlags)
+	$(compiler) -c report_main.cpp  $(NVCCFlags)
 test.o: test.cpp test.h
 	$(compiler) -c test.cpp $(NVCCFlags)
 serial.o: serial.cpp serial.h

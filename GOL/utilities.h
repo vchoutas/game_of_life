@@ -32,6 +32,9 @@ namespace utilities
   void save_table(int *X, int N);
   int count(bool* currGrid,int height,int width,
       const std::string& prefix=std::string(""));
+  int countGhost(bool* currGrid,int height,int width);
+  void generate_ghost_table(bool *Grid,bool *GhostGrid, size_t N);
+  void print(bool* grid,size_t N );
 
 } // namespace utilities
 

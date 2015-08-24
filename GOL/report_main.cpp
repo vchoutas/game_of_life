@@ -4,6 +4,7 @@
 #include "serial.h"
 #include "simple_cuda.cuh"
 #include "many_cuda.cuh"
+#include "utilities.h"
 
 int main(int argc, char *argv[])
 {
@@ -31,13 +32,7 @@ int main(int argc, char *argv[])
     std::cout << "Could not allocate memory for the initial grid!" << std::endl;
     return -1;
   }
-  bool* finalSerialGrid = new bool[N * N];
-  if (finalSerialGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the final grid for the serial code!" << std::endl;
-    delete[] startingGrid;
-    return -1;
-  }
+
 
   if (!utilities::readFile(startingGrid, argv[1], N))
   {
@@ -45,13 +40,49 @@ int main(int argc, char *argv[])
     return -1;
   }
 
+
   bool* serialStartingGrid = new bool[N * N];
   if (serialStartingGrid == NULL)
   {
     std::cout << "Could not allocate memory for the initial grid of the serial code!" << std::endl;
   }
+
+   bool* finalSerialGrid = new bool[N * N];
+  if (finalSerialGrid == NULL)
+  {
+    std::cout << "Could not allocate memory for the final grid for the serial code!" << std::endl;
+    delete[] startingGrid;
+    return -1;
+  }
+
+
+
+  bool* serialStartingGhostGrid = new bool[(N+2) * (N+2)];
+  if (serialStartingGrid == NULL)
+  {
+    std::cout << "Could not allocate memory for the initial ghost grid of the serial code!" << std::endl;
+  }
+
+
+  bool* finalSerialGhostGrid = new bool[(N+2)* (N+2)];
+  if (finalSerialGrid == NULL)
+  {
+    std::cout << "Could not allocate memory for the final serila ghost grid for the serial code!" << std::endl;
+    delete[] startingGrid;
+    return -1;
+  }
+
   memcpy(serialStartingGrid, startingGrid, N * N * sizeof(bool));
+
+  utilities::generate_ghost_table(startingGrid,serialStartingGhostGrid,N);
+  //utilities::print(serialStartingGrid,N);
+  //utilities::print(serialStartingGhostGrid,N+2);
+  serial::createGhostCells(serialStartingGhostGrid,N+2);
+  utilities::print(serialStartingGhostGrid,N+2);
+  serial::execSerialGhost(&serialStartingGhostGrid , &finalSerialGhostGrid,  N,  maxGen);
+  utilities::countGhost(finalSerialGhostGrid, N, N);
   serial::execSerial(&serialStartingGrid, &finalSerialGrid, N, maxGen);
+
 
   bool* simpleGpuStartingGrid = new bool[N * N];
   bool* simpleGpuFinalGrid = new bool[N * N];
