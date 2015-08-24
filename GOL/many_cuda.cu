@@ -53,8 +53,10 @@ void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::cout << "[Naive Many Cells per Thread GPU]: Execution Time is = <"
+  std::string prefix("[Naive Many Cells per Thread GPU]: ");
+  std::cout << std::endl << prefix << "Execution Time is = <"
     << time / 1000.0f  << "> seconds" << std::endl;
+  utilities::count(*finalGrid, N, N, prefix);
 
 
   // Execute the second version of the many cells per thread gpu implementation.
@@ -79,8 +81,11 @@ void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
   cudaEventRecord(endTimeDevice, 0);
   cudaEventSynchronize(endTimeDevice);
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::cout << "[Optimized Many Cells per Thread GPU Version]: Execution Time is = <"
+
+  prefix = std::string("[Optimized Many Cells per Thread GPU Version]: ");
+  std::cout << std::endl << prefix << "Execution Time is = <"
     << time / 1000.0f  << "> seconds" << std::endl;
+  utilities::count(*finalGrid, N, N, prefix);
 
   cudaFree(currentGridDevice);
   cudaFree(nextGridDevice);

@@ -52,7 +52,6 @@ int main(int argc, char *argv[])
   }
   memcpy(serialStartingGrid, startingGrid, N * N * sizeof(bool));
   serial::execSerial(&serialStartingGrid, &finalSerialGrid, N, maxGen);
-  utilities::count(finalSerialGrid, N, N);
 
   bool* simpleGpuStartingGrid = new bool[N * N];
   bool* simpleGpuFinalGrid = new bool[N * N];
@@ -68,7 +67,6 @@ int main(int argc, char *argv[])
   }
   memcpy(simpleGpuStartingGrid, startingGrid, N * N * sizeof(bool));
   simple_cuda(&simpleGpuStartingGrid, &simpleGpuFinalGrid, N, maxGen);
-  utilities::count(simpleGpuFinalGrid, N, N);
 
   bool* simpleGpuPitchStartingGrid = new bool[N * N];
   bool* simpleGpuPitchFinalGrid = new bool[N * N];
@@ -84,7 +82,6 @@ int main(int argc, char *argv[])
   }
   memcpy(simpleGpuPitchStartingGrid, startingGrid, N * N * sizeof(bool));
   simpleCudaPitch(&simpleGpuPitchStartingGrid, &simpleGpuPitchFinalGrid, N, maxGen);
-  utilities::count(simpleGpuPitchFinalGrid, N, N);
 
   bool* manyGpuStartingGrid = new bool[N * N];
   bool* manyGpuFinalGrid = new bool[N * N];
@@ -100,16 +97,15 @@ int main(int argc, char *argv[])
   }
   memcpy(manyGpuStartingGrid, startingGrid, N * N * sizeof(bool));
   many_cuda(&manyGpuStartingGrid, &manyGpuFinalGrid, N, maxGen);
-  utilities::count(manyGpuFinalGrid,N,N);
 
   delete[] startingGrid;
   delete[] serialStartingGrid;
   delete[] finalSerialGrid;
   delete[] simpleGpuStartingGrid;
   delete[] simpleGpuFinalGrid;
-  delete[] manyGpuStartingGrid;
-  delete[] manyGpuFinalGrid;
   delete[] simpleGpuPitchStartingGrid;
   delete[] simpleGpuPitchFinalGrid;
+  delete[] manyGpuStartingGrid;
+  delete[] manyGpuFinalGrid;
   return 0;
 }

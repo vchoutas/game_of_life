@@ -52,8 +52,10 @@ void simple_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::cout << "[Naive Single Cell per Thread]: Execution Time is = <"
+  std::string prefix("[Naive Single Cell per Thread]: ");
+  std::cout << std::endl << prefix << "Execution Time is = <"
     << time / 1000.0f << "> seconds" << std::endl;
+  utilities::count(*finalGrid, N, N, prefix);
 
   cudaFree(currentGridDevice);
   cudaFree(nextGridDevice);
@@ -113,8 +115,10 @@ void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::cout << "[Naive Single Cell per Thread Pitch]: Execution Time is = <"
+  std::string prefix("[Naive Single Cell per Thread Pitch]: ");
+  std::cout << std::endl << prefix << "Execution Time is = <"
     << time / 1000.0f << "> seconds" << std::endl;
+  utilities::count(*finalGrid, N, N, prefix);
 
   cudaFree(currentGridDevice);
   cudaFree(nextGridDevice);

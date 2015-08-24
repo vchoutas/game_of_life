@@ -47,9 +47,11 @@ void execSerial(bool** startingGrid, bool** finalGrid, int N, int maxGen)
   SWAP(*startingGrid, *finalGrid);
   gettimeofday(&endTime, NULL);
 
+  std::string prefix("[Serial Game of Life]: ");
   double serialExecTime = (double)((endTime.tv_usec - startTime.tv_usec)
       /1.0e6 + endTime.tv_sec - startTime.tv_sec);
-  std::cout << "[Serial Game of Life]: <" << serialExecTime << "> seconds" << std::endl;
+  std::cout << std::endl << prefix << "<" << serialExecTime << "> seconds" << std::endl;
+  utilities::count(*finalGrid, N, N, prefix);
 
   return;
 }

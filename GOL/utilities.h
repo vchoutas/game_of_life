@@ -30,7 +30,8 @@ namespace utilities
   bool readFile(bool *X, std::string filename, size_t N);
   void generate_table(bool *X, size_t N);
   void save_table(int *X, int N);
-  int count(bool* currGrid,int height,int width);
+  int count(bool* currGrid,int height,int width,
+      const std::string& prefix=std::string(""));
 
 } // namespace utilities
 
