@@ -6,6 +6,7 @@
 #include <cuda_runtime.h>
 
 __global__ void manyNextGenerationKernel(bool* currentGrid, bool* nextGrid, const int N);
+__global__ void multiNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N);
 __device__ inline int manycalcNeighborsKernel(bool* currentGrid, int x, int left, int right, int center, int up , int down);
 void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen);
 

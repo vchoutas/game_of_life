@@ -10,12 +10,21 @@ int main(int argc, char *argv[])
   if (argc < 4)
   {
     std::cout << "Usage : " << argv[0]
-    << "\n\t inputGoLGridFile \n\t N(gridSize) \n\t numberOfGenerations"<< std::endl;
+    << "\n\t inputGoLGridFile \n\t N(gridSize) \n\t numberOfGenerations"
+    << "\n\t deviceId(optional)"<< std::endl;
     return -1;
   }
 
   int N = atoi(argv[2]);
   int maxGen = atoi(argv[3]);
+
+  int deviceId = 0;
+  if (argc == 5)
+    deviceId = atoi(argv[4]);
+
+  cudaSetDevice(deviceId);
+  cudaCheckErrors("Cuda Device Selection Error");
+
   bool* startingGrid = new bool[N * N];
   if (startingGrid == NULL)
   {
@@ -61,24 +70,6 @@ int main(int argc, char *argv[])
   simple_cuda(&simpleGpuStartingGrid, &simpleGpuFinalGrid, N, maxGen);
   utilities::count(simpleGpuFinalGrid, N, N);
 
-
-
-  bool* manyGpuStartingGrid = new bool[N * N];
-  bool* manyGpuFinalGrid = new bool[N * N];
-  if (manyGpuStartingGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the initial grid array(many gpu version)!" << std::endl;
-    return -1;
-  }
-  if (manyGpuFinalGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the final grid array(many gpu version)!" << std::endl;
-    return -1;
-  }
-  memcpy(manyGpuStartingGrid, startingGrid, N * N * sizeof(bool));
-  many_cuda(&manyGpuStartingGrid, &manyGpuFinalGrid, N, maxGen);
-  utilities::count(manyGpuFinalGrid,N,N);
-
   bool* simpleGpuPitchStartingGrid = new bool[N * N];
   bool* simpleGpuPitchFinalGrid = new bool[N * N];
   if (simpleGpuPitchStartingGrid == NULL)
@@ -95,6 +86,21 @@ int main(int argc, char *argv[])
   simpleCudaPitch(&simpleGpuPitchStartingGrid, &simpleGpuPitchFinalGrid, N, maxGen);
   utilities::count(simpleGpuPitchFinalGrid, N, N);
 
+  bool* manyGpuStartingGrid = new bool[N * N];
+  bool* manyGpuFinalGrid = new bool[N * N];
+  if (manyGpuStartingGrid == NULL)
+  {
+    std::cout << "Could not allocate memory for the initial grid array(many gpu version)!" << std::endl;
+    return -1;
+  }
+  if (manyGpuFinalGrid == NULL)
+  {
+    std::cout << "Could not allocate memory for the final grid array(many gpu version)!" << std::endl;
+    return -1;
+  }
+  memcpy(manyGpuStartingGrid, startingGrid, N * N * sizeof(bool));
+  many_cuda(&manyGpuStartingGrid, &manyGpuFinalGrid, N, maxGen);
+  utilities::count(manyGpuFinalGrid,N,N);
 
   delete[] startingGrid;
   delete[] serialStartingGrid;

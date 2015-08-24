@@ -52,7 +52,8 @@ void simple_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::cout << "GPU Execution Time is = " << time / 1000.0f  << std::endl;
+  std::cout << "[Naive Single Cell per Thread]: Execution Time is = <"
+    << time / 1000.0f << "> seconds" << std::endl;
 
   cudaFree(currentGridDevice);
   cudaFree(nextGridDevice);
@@ -100,7 +101,6 @@ void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen)
     // Copy the Contents of the current and the next grid
     simpleNextGenerationKernelPitch<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice, N, pitchStart,
         pitchDest);
-    cudaCheckErrors("Exec Error");
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
@@ -113,7 +113,8 @@ void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::cout << "Pitch GPU Execution Time is = " << time / 1000.0f  << std::endl;
+  std::cout << "[Naive Single Cell per Thread Pitch]: Execution Time is = <"
+    << time / 1000.0f << "> seconds" << std::endl;
 
   cudaFree(currentGridDevice);
   cudaFree(nextGridDevice);
@@ -150,31 +151,29 @@ __global__ void simpleNextGenerationKernelPitch(bool* currentGrid, bool* nextGri
 {
   int col = blockIdx.x * blockDim.x + threadIdx.x;
   int row = blockIdx.y * blockDim.y + threadIdx.y;
-  int index = row * N + col;
-  if (index > N * N)
-    return;
+  if (col < N && row < N)
+  {
+    bool* currentRow = (bool*)(currentGrid + row * currentGridPitch);
 
-  bool* currentRow = (bool*)((char*)currentGrid + row * currentGridPitch);
-
-  // The row above the current one.
-  size_t up = (row + N - 1) % N;
-  bool* previousRow = (bool*)((char*)currentGrid + up * currentGridPitch);
-  // The row below the current one.
-  size_t down = (row + 1) % N;
-  bool* nextRow = (bool*)((char*)currentGrid + down * currentGridPitch);
-  // Get the index for the left column
-  size_t left = (col + N - 1) % N;
-  // Get the index of the right column
-  size_t right = (col + 1) % N;
+    // The row above the current one.
+    size_t up = (row + N - 1) % N;
+    bool* previousRow = (bool*)(currentGrid + up * currentGridPitch);
+    // The row below the current one.
+    size_t down = (row + 1) % N;
+    bool* nextRow = (bool*)(currentGrid + down * currentGridPitch);
+    // Get the index for the left column
+    size_t left = (col + N - 1) % N;
+    // Get the index of the right column
+    size_t right = (col + 1) % N;
 
 
-  int livingNeighbors = previousRow[left] + previousRow[col] + previousRow[right]
-    + currentRow[left] + currentRow[right] + nextRow[left] + nextRow[col] + nextRow[right];
+    int livingNeighbors = previousRow[left] + previousRow[col] + previousRow[right]
+      + currentRow[left] + currentRow[right] + nextRow[left] + nextRow[col] + nextRow[right];
 
-  bool* nextGridRow = (bool*)((char*)nextGrid + row * nextGridPitch);
-  nextGridRow[col] = livingNeighbors == 3 ||
-    (livingNeighbors == 2 && currentRow[col]) ? 1 : 0;
-
+    bool* nextGridRow = (bool*)(nextGrid + row * nextGridPitch);
+    nextGridRow[col] = livingNeighbors == 3 ||
+      (livingNeighbors == 2 && currentRow[col]) ? 1 : 0;
+  }
   return;
 }
 
