@@ -32,13 +32,12 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  //if (!utilities::readFile(startingGrid, argv[1], N))
-  //{
-    //std::cout << "Could not read input file!" << std::endl;
-    //return -1;
-  //}
+  if (!utilities::readFile(startingGrid, argv[1], N))
+  {
+    std::cout << "Could not read input file!" << std::endl;
+    return -1;
+  }
 
-  utilities::generate_table(startingGrid,N);
   // Execute the serial code.
   serial::execSerial(startingGrid, N, maxGen);
 

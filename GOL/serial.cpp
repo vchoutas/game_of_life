@@ -23,7 +23,7 @@ namespace serial
     //write the corners
     Grid[toLinearIndex(0, 0, N)] = Grid[toLinearIndex(N - 2, N - 2, N)];//(0,0)-->(N-2,N-2)
     Grid[toLinearIndex(N - 1, N - 1, N)] = Grid[toLinearIndex(1, 1, N)];//(N-1,N-1)-->(1,1)
-    Grid[toLinearIndex(0, N - 1 , N)] = Grid[toLinearIndex(N _ 2, 1, N)];//(0,N-1)-->(N-2,1)
+    Grid[toLinearIndex(0, N - 1 , N)] = Grid[toLinearIndex(N - 2, 1, N)];//(0,N-1)-->(N-2,1)
     Grid[toLinearIndex(N - 1, 0, N)] = Grid[toLinearIndex(1, N - 2, N)];//(N-1,0)-->(1,N-2)
 
     return;
@@ -167,7 +167,7 @@ namespace serial
 
     double serialExecTime = (double)((endTime.tv_usec - startTime.tv_usec)
         /1.0e6 + endTime.tv_sec - startTime.tv_sec);
-    std::cout << prefix << "<" << serialExecTime << "> seconds" << std::endl;
+    std::cout << std::endl << prefix << "<" << serialExecTime << "> seconds" << std::endl;
     utilities::countGhost(nextGameGrid, N, N, prefix);
 
     delete[] initialGameGrid;

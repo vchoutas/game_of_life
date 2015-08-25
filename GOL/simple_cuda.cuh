@@ -16,6 +16,7 @@ __global__ void simpleGhostNextGenerationKernelPitch(bool* currentGrid, bool* ne
     size_t currentGridPitch, size_t nextGridPitch);
 __global__ void ghostRows(bool* currentGridDevice,int N);
 __global__ void ghostCols(bool* currentGridDevice,int N);
+__global__ void ghostCorners(bool* grid, int N);
 __global__ void  simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N);
 
 #endif // SIMPLE_CUDA_GOL_H
