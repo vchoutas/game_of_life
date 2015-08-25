@@ -150,8 +150,8 @@ namespace serial
     utilities::generate_ghost_table(startingGrid, initialGameGrid, N);
     //utilities::print(serialStartingGrid,N);
     //utilities::print(serialStartingGhostGrid,N+2);
-    serial::createGhostCells(initialGameGrid, N + 2);
-    utilities::print(initialGameGrid, N + 2);
+    //serial::createGhostCells(initialGameGrid, N + 2);
+    //utilities::print(initialGameGrid, N + 2);
 
     struct timeval startTime, endTime;
     gettimeofday(&startTime, NULL);

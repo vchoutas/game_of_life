@@ -57,7 +57,7 @@ namespace utilities
 
     for(size_t i=0; i<N+2; i++){
       for(size_t j=0; j<N+2; j++){
-        GhostGrid[toLinearIndex(i, j, N)] = 0;
+        GhostGrid[toLinearIndex(i, j, N+2)] = 0;
       }
     }
     for(size_t i=0; i<N; i++){
@@ -66,7 +66,7 @@ namespace utilities
       }
     }
 
-    std::cout << "Ghost grid  created" << std::endl;
+    //std::cout << "Ghost grid  created" << std::endl;
   }
 
   void save_table(bool *X, size_t N){
