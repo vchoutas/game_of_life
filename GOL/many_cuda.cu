@@ -7,9 +7,17 @@
 #define MAXBLOCKS 512
 #define CELLPERTHR 8
 
-void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
+void multiCellCudaNaive(bool* startingGrid, int N, int maxGen)
 {
-  const size_t arraySize = N* N;
+  std::string prefix("[Naive Multiple Cells per Thread GPU]: ");
+
+  bool* finalGameGrid = new bool[N * N];
+  if (finalGameGrid == NULL)
+  {
+    std::cout << prefix << "Could not allocate memory for the final grid array!" << std::endl;
+    return;
+  }
+  const size_t arraySize = N * N;
 
   bool* currentGridDevice;
   bool* nextGridDevice;
@@ -22,7 +30,7 @@ void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   if (currentGridDevice == NULL || nextGridDevice == NULL)
   {
-    std::cout << "Unable to allocate Device Memory!" << std::endl;
+    std::cout << prefix << "Unable to allocate Device Memory!" << std::endl;
     return;
   }
 
@@ -37,7 +45,7 @@ void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   cudaEventRecord(startTimeDevice, 0);
   /* Copy the initial grid to the device. */
-  cudaMemcpy(currentGridDevice, *startingGrid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
+  cudaMemcpy(currentGridDevice, startingGrid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
   for (int i = 0; i < maxGen; ++i)
   {
     // Copy the Contents of the current and the next grid
@@ -46,27 +54,70 @@ void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
-  cudaMemcpy(*finalGrid, currentGridDevice, arraySize * sizeof(bool), cudaMemcpyDeviceToHost);
+  cudaMemcpy(finalGameGrid, currentGridDevice, arraySize * sizeof(bool), cudaMemcpyDeviceToHost);
 
   cudaEventRecord(endTimeDevice, 0);
   cudaEventSynchronize(endTimeDevice);
 
   float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::string prefix("[Naive Many Cells per Thread GPU]: ");
   std::cout << std::endl << prefix << "Execution Time is = <"
     << time / 1000.0f  << "> seconds" << std::endl;
-  utilities::count(*finalGrid, N, N, prefix);
+  utilities::count(finalGameGrid, N, N, prefix);
 
+  // Free device memory.
+  cudaFree(currentGridDevice);
+  cudaFree(nextGridDevice);
+  cudaDeviceReset();
+
+  // Free host memory.
+  delete[] finalGameGrid;
+
+  return;
+}
+
+void multiCellCuda(bool* startingGrid, int N, int maxGen)
+{
+  std::string prefix("[Optimized Many Cells per Thread GPU Version]: ");
+
+  bool* finalGameGrid = new bool[N * N];
+  if (finalGameGrid == NULL)
+  {
+    std::cout << prefix << "Could not allocate memory for the final grid array!" << std::endl;
+    return;
+  }
+
+  const size_t arraySize = N * N;
+  bool* currentGridDevice;
+  bool* nextGridDevice;
+
+  cudaMalloc((void**) &currentGridDevice, arraySize);
+  cudaCheckErrors("Device memory Allocation Error!");
+
+  cudaMalloc((void**) &nextGridDevice, arraySize);
+  cudaCheckErrors("Device memory Allocation Error!");
+
+  if (currentGridDevice == NULL || nextGridDevice == NULL)
+  {
+    std::cout << prefix << "Unable to allocate Device Memory!" << std::endl;
+    return;
+  }
 
   // Execute the second version of the many cells per thread gpu implementation.
-  threadNum = dim3(16, 8);
-  blocks = dim3(std::min(N / (threadNum.x * CELLPERTHR) + 1, (unsigned int)MAXBLOCKS),
+  dim3 threadNum(16, 8);
+  dim3 blocks(std::min(N / (threadNum.x * CELLPERTHR) + 1, (unsigned int)MAXBLOCKS),
       std::min(N / (threadNum.y * CELLPERTHR) + 1, (unsigned int)MAXBLOCKS));
+
+  cudaEvent_t startTimeDevice, endTimeDevice;
+  cudaEventCreate(&startTimeDevice);
+  cudaCheckErrors("Event Initialization Error");
+  cudaEventCreate(&endTimeDevice);
+  cudaCheckErrors("Event Initialization Error");
+
 
   cudaEventRecord(startTimeDevice, 0);
   // Copy the initial grid to the device.
-  cudaMemcpy(currentGridDevice, *startingGrid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
+  cudaMemcpy(currentGridDevice, startingGrid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
   for (int i = 0; i < maxGen; ++i)
   {
     // Copy the Contents of the current and the next grid
@@ -75,21 +126,26 @@ void many_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
-  cudaMemcpy(*finalGrid, currentGridDevice, arraySize * sizeof(bool), cudaMemcpyDeviceToHost);
+  cudaMemcpy(finalGameGrid, currentGridDevice, arraySize * sizeof(bool), cudaMemcpyDeviceToHost);
   cudaCheckErrors("Final MemCpy Error");
 
   cudaEventRecord(endTimeDevice, 0);
   cudaEventSynchronize(endTimeDevice);
+
+  float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
 
-  prefix = std::string("[Optimized Many Cells per Thread GPU Version]: ");
   std::cout << std::endl << prefix << "Execution Time is = <"
     << time / 1000.0f  << "> seconds" << std::endl;
-  utilities::count(*finalGrid, N, N, prefix);
+  utilities::count(finalGameGrid, N, N, prefix);
 
+  // Free device memory.
   cudaFree(currentGridDevice);
   cudaFree(nextGridDevice);
   cudaDeviceReset();
+
+  // Free host memory.
+  delete[] finalGameGrid;
 
   return;
 }

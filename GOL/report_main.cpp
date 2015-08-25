@@ -1,6 +1,5 @@
 #include <iostream>
 #include <cstdlib>
-#include <cstring>
 #include "serial.h"
 #include "simple_cuda.cuh"
 #include "many_cuda.cuh"
@@ -33,110 +32,30 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-
   if (!utilities::readFile(startingGrid, argv[1], N))
   {
     std::cout << "Could not read input file!" << std::endl;
     return -1;
   }
 
+  // Execute the serial code.
+  serial::execSerial(startingGrid, N, maxGen);
 
-  bool* serialStartingGrid = new bool[N * N];
-  if (serialStartingGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the initial grid of the serial code!" << std::endl;
-  }
+  // Execute the serial code using the ghost cells to simulate the cyclic world
+  // instead of the modulus operations.
+  serial::execSerialGhost(startingGrid , N, maxGen);
 
-   bool* finalSerialGrid = new bool[N * N];
-  if (finalSerialGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the final grid for the serial code!" << std::endl;
-    delete[] startingGrid;
-    return -1;
-  }
+  // Execute the simple version of the parallel Game of Life algorithm.
+  simpleCuda(startingGrid, N, maxGen);
 
+  // Execute the simple version of the parallel Game of Life with better
+  // memory allocation.
+  simpleCudaPitch(startingGrid, N, maxGen);
 
+  multiCellCudaNaive(startingGrid, N, maxGen);
 
-  bool* serialStartingGhostGrid = new bool[(N+2) * (N+2)];
-  if (serialStartingGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the initial ghost grid of the serial code!" << std::endl;
-  }
-
-
-  bool* finalSerialGhostGrid = new bool[(N+2)* (N+2)];
-  if (finalSerialGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the final serila ghost grid for the serial code!" << std::endl;
-    delete[] startingGrid;
-    return -1;
-  }
-
-  memcpy(serialStartingGrid, startingGrid, N * N * sizeof(bool));
-
-  utilities::generate_ghost_table(startingGrid,serialStartingGhostGrid,N);
-  //utilities::print(serialStartingGrid,N);
-  //utilities::print(serialStartingGhostGrid,N+2);
-  serial::createGhostCells(serialStartingGhostGrid,N+2);
-  utilities::print(serialStartingGhostGrid,N+2);
-  serial::execSerialGhost(&serialStartingGhostGrid , &finalSerialGhostGrid,  N,  maxGen);
-  utilities::countGhost(finalSerialGhostGrid, N, N);
-  serial::execSerial(&serialStartingGrid, &finalSerialGrid, N, maxGen);
-
-
-  bool* simpleGpuStartingGrid = new bool[N * N];
-  bool* simpleGpuFinalGrid = new bool[N * N];
-  if (simpleGpuStartingGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the initial grid array(simple gpu version)!" << std::endl;
-    return -1;
-  }
-  if (simpleGpuFinalGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the final grid array(simple gpu version)!" << std::endl;
-    return -1;
-  }
-  memcpy(simpleGpuStartingGrid, startingGrid, N * N * sizeof(bool));
-  simple_cuda(&simpleGpuStartingGrid, &simpleGpuFinalGrid, N, maxGen);
-
-  bool* simpleGpuPitchStartingGrid = new bool[N * N];
-  bool* simpleGpuPitchFinalGrid = new bool[N * N];
-  if (simpleGpuPitchStartingGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the initial grid array(simple gpu version)!" << std::endl;
-    return -1;
-  }
-  if (simpleGpuPitchFinalGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the final grid array(simple gpu version)!" << std::endl;
-    return -1;
-  }
-  memcpy(simpleGpuPitchStartingGrid, startingGrid, N * N * sizeof(bool));
-  simpleCudaPitch(&simpleGpuPitchStartingGrid, &simpleGpuPitchFinalGrid, N, maxGen);
-
-  bool* manyGpuStartingGrid = new bool[N * N];
-  bool* manyGpuFinalGrid = new bool[N * N];
-  if (manyGpuStartingGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the initial grid array(many gpu version)!" << std::endl;
-    return -1;
-  }
-  if (manyGpuFinalGrid == NULL)
-  {
-    std::cout << "Could not allocate memory for the final grid array(many gpu version)!" << std::endl;
-    return -1;
-  }
-  memcpy(manyGpuStartingGrid, startingGrid, N * N * sizeof(bool));
-  many_cuda(&manyGpuStartingGrid, &manyGpuFinalGrid, N, maxGen);
+  multiCellCuda(startingGrid, N, maxGen);
 
   delete[] startingGrid;
-  delete[] serialStartingGrid;
-  delete[] finalSerialGrid;
-  delete[] simpleGpuStartingGrid;
-  delete[] simpleGpuFinalGrid;
-  delete[] simpleGpuPitchStartingGrid;
-  delete[] simpleGpuPitchFinalGrid;
-  delete[] manyGpuStartingGrid;
-  delete[] manyGpuFinalGrid;
   return 0;
 }

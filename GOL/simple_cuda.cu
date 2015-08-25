@@ -6,8 +6,19 @@
 #include "simple_cuda.cuh"
 #define MAXBLOCKS 65535
 
-void simple_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
+void simpleCuda(bool* startingGrid, int N, int maxGen)
 {
+  std::string prefix("[Naive Single Cell per Thread]: ");
+
+  // The host array that will contain the game of life grid after maxGen generations.
+  bool* finalGameGrid = new bool[N * N];
+  if (finalGameGrid == NULL)
+  {
+    std::cout << prefix << "Could not allocate memory for the next generation grid array!" << std::endl;
+    return;
+  }
+
+  // Copy the input data to
   const size_t arraySize = N* N;
 
   bool* currentGridDevice;
@@ -21,7 +32,7 @@ void simple_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   if (currentGridDevice == NULL || nextGridDevice == NULL)
   {
-    std::cout << "Unable to allocate Device Memory!" << std::endl;
+    std::cout << prefix << "Unable to allocate Device Memory!" << std::endl;
     return;
   }
 
@@ -36,7 +47,7 @@ void simple_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   cudaEventRecord(startTimeDevice, 0);
   /* Copy the initial grid to the device. */
-  cudaMemcpy(currentGridDevice, *startingGrid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
+  cudaMemcpy(currentGridDevice, startingGrid, arraySize * sizeof(bool), cudaMemcpyHostToDevice);
   for (int i = 0; i < maxGen; ++i)
   {
     // Copy the Contents of the current and the next grid
@@ -45,27 +56,37 @@ void simple_cuda(bool** startingGrid, bool** finalGrid, int N, int maxGen)
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
-  cudaMemcpy(*finalGrid, currentGridDevice, arraySize * sizeof(bool), cudaMemcpyDeviceToHost);
+  cudaMemcpy(finalGameGrid, currentGridDevice, arraySize * sizeof(bool), cudaMemcpyDeviceToHost);
 
   cudaEventRecord(endTimeDevice, 0);
   cudaEventSynchronize(endTimeDevice);
 
   float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::string prefix("[Naive Single Cell per Thread]: ");
   std::cout << std::endl << prefix << "Execution Time is = <"
     << time / 1000.0f << "> seconds" << std::endl;
-  utilities::count(*finalGrid, N, N, prefix);
+  utilities::count(finalGameGrid, N, N, prefix);
 
   cudaFree(currentGridDevice);
   cudaFree(nextGridDevice);
   cudaDeviceReset();
 
+  delete[] finalGameGrid;
+
   return;
 }
 
-void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen)
+void simpleCudaPitch(bool* startingGrid, int N, int maxGen)
 {
+  std::string prefix("[Naive Single Cell per Thread Pitch]: ");
+
+  bool* finalGameGrid = new bool[N * N];
+  if (finalGameGrid == NULL)
+  {
+    std::cout << prefix << "Could not allocate memory for the final grid array!" << std::endl;
+    return;
+  }
+
   bool* currentGridDevice;
   bool* nextGridDevice;
 
@@ -80,7 +101,7 @@ void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   if (currentGridDevice == NULL || nextGridDevice == NULL)
   {
-    std::cout << "Unable to allocate Device Memory!" << std::endl;
+    std::cout << prefix << "Unable to allocate Device Memory!" << std::endl;
     return;
   }
 
@@ -95,7 +116,7 @@ void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   cudaEventRecord(startTimeDevice, 0);
   /* Copy the initial grid to the device. */
-  cudaMemcpy2D(currentGridDevice, pitchStart, *startingGrid, N * sizeof(bool), N * sizeof(bool)
+  cudaMemcpy2D(currentGridDevice, pitchStart, startingGrid, N * sizeof(bool), N * sizeof(bool)
       , N, cudaMemcpyHostToDevice);
   cudaCheckErrors("Initial Memcpy 2D Error");
   for (int i = 0; i < maxGen; ++i)
@@ -106,7 +127,7 @@ void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen)
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
-  cudaMemcpy2D(*finalGrid, N * sizeof(bool), currentGridDevice, pitchStart, N * sizeof(bool),
+  cudaMemcpy2D(finalGameGrid, N * sizeof(bool), currentGridDevice, pitchStart, N * sizeof(bool),
       N, cudaMemcpyDeviceToHost);
   cudaCheckErrors("Final Memcpy 2D Error");
 
@@ -115,15 +136,15 @@ void simpleCudaPitch(bool** startingGrid, bool** finalGrid, int N, int maxGen)
 
   float time;
   cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
-  std::string prefix("[Naive Single Cell per Thread Pitch]: ");
   std::cout << std::endl << prefix << "Execution Time is = <"
     << time / 1000.0f << "> seconds" << std::endl;
-  utilities::count(*finalGrid, N, N, prefix);
+  utilities::count(finalGameGrid, N, N, prefix);
 
   cudaFree(currentGridDevice);
   cudaFree(nextGridDevice);
   cudaDeviceReset();
 
+  delete[] finalGameGrid;
   return;
 }
 
@@ -132,21 +153,20 @@ __global__ void simpleNextGenerationKernel(bool* currentGrid, bool* nextGrid, in
   int col = blockIdx.x * blockDim.x + threadIdx.x;
   int row = blockIdx.y * blockDim.y + threadIdx.y;
   int index = row * N + col;
-  if (index > N * N)
-    return;
+  if (col < N && row < N)
+  {
+    int x = index % N;
+    int y = (index - x) / N;
+    size_t up = ( (y + N - 1) % N) * N;
+    size_t center = y * N;
+    size_t down = ((y + 1) % N) * N;
+    size_t left = (x + N - 1) % N;
+    size_t right = (x + 1) % N;
 
-  int x = index % N;
-  int y = (index - x) / N;
-  size_t up = ( (y + N - 1) % N) * N;
-  size_t center = y * N;
-  size_t down = ((y + 1) % N) * N;
-  size_t left = (x + N - 1) % N;
-  size_t right = (x + 1) % N;
-
-  int livingNeighbors = calcNeighborsKernel(currentGrid, x, left, right, center, up, down);
-  nextGrid[center + x] = livingNeighbors == 3 ||
-    (livingNeighbors == 2 && currentGrid[x + center]) ? 1 : 0;
-
+    int livingNeighbors = calcNeighborsKernel(currentGrid, x, left, right, center, up, down);
+    nextGrid[center + x] = livingNeighbors == 3 ||
+      (livingNeighbors == 2 && currentGrid[x + center]) ? 1 : 0;
+  }
   return;
 }
 
