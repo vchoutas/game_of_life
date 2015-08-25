@@ -11,20 +11,20 @@ namespace serial
     for (int x = 1; x < N - 1; ++x)
     {
       //The first and last columns are to be wrriten
-      Grid[x + (N-1) * N] = Grid[x + 1 * N];  //write bottom to top
-      Grid[x + 0 * N] = Grid[x + (N - 2) * N];  //write top to bottom
+      Grid[toLinearIndex(N - 1, x, N)] = Grid[toLinearIndex(1, x, N)];  //write bottom to top
+      Grid[toLinearIndex(0, x, N)] = Grid[toLinearIndex(N - 2, x, N)];  //write top to bottom
     }
-    for ( int y = 1; y <N-1;++y)
+    for ( int y = 1; y < N - 1; ++y)
     {
-      Grid[y*N + N-1] = Grid[y*N +  1 ];  //write left  to   right
-      Grid[y*N +  0 ] = Grid[y*N + N-2];  //write right  to left
+      Grid[toLinearIndex(y, N - 1, N)] = Grid[toLinearIndex(y, 1, N)];  //write left  to   right
+      Grid[toLinearIndex(y, 0, N)] = Grid[toLinearIndex(y, N - 2, N)];  //write right  to left
     }
 
     //write the corners
-    Grid[0*N     +  0 ] = Grid[ (N-2)*N + N-2];//(0,0)-->(N-2,N-2)
-    Grid[(N-1)*N + N-1] = Grid[ 1*N     + 1 ];//(N-1,N-1)-->(1,1)
-    Grid[0*N     + N-1] = Grid[ (N-2)*N + 1];//(0,N-1)-->(N-2,1)
-    Grid[(N-1)*N +  0 ] = Grid[ 1*N     + N-2];//(N-1,0)-->(1,N-2)
+    Grid[toLinearIndex(0, 0, N)] = Grid[toLinearIndex(N - 2, N - 2, N)];//(0,0)-->(N-2,N-2)
+    Grid[toLinearIndex(N - 1, N - 1, N)] = Grid[toLinearIndex(1, 1, N)];//(N-1,N-1)-->(1,1)
+    Grid[toLinearIndex(0, N - 1 , N)] = Grid[toLinearIndex(N _ 2, 1, N)];//(0,N-1)-->(N-2,1)
+    Grid[toLinearIndex(N - 1, 0, N)] = Grid[toLinearIndex(1, N - 2, N)];//(N-1,0)-->(1,N-2)
 
     return;
   }
@@ -34,7 +34,7 @@ namespace serial
   {
     for (int y = 0; y < height; ++y)
     {
-      int up = ( (y + height - 1) % height) * width;
+      int up = ((y + height - 1) % height) * width;
       int center = y * width;
       int down = ((y + 1) % height) * width;
       for (int x = 0; x < width; ++x)
@@ -168,7 +168,6 @@ namespace serial
     double serialExecTime = (double)((endTime.tv_usec - startTime.tv_usec)
         /1.0e6 + endTime.tv_sec - startTime.tv_sec);
     std::cout << prefix << "<" << serialExecTime << "> seconds" << std::endl;
-
     utilities::countGhost(nextGameGrid, N, N, prefix);
 
     delete[] initialGameGrid;

@@ -157,7 +157,7 @@ __global__ void simpleNextGenerationKernel(bool* currentGrid, bool* nextGrid, in
   {
     int x = index % N;
     int y = (index - x) / N;
-    size_t up = ( (y + N - 1) % N) * N;
+    size_t up = ((y + N - 1) % N) * N;
     size_t center = y * N;
     size_t down = ((y + 1) % N) * N;
     size_t left = (x + N - 1) % N;
