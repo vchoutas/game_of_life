@@ -175,14 +175,6 @@ void simpleCudaGhostPitch(bool* startingGrid, int N, int maxGen)
   bool* currentGridDevice;
   bool* nextGridDevice;
 
-  size_t pitchStart;
-  size_t pitchDest;
-
-  /* cudaMallocPitch((void**) &currentGridDevice, &pitchStart, (GhostN) * sizeof(bool), (GhostN)); */
-  /* cudaCheckErrors("Device memory Allocation Error!"); */
-
-  /* cudaMallocPitch((void**) &nextGridDevice, &pitchDest, (GhostN) * sizeof(bool), (GhostN)); */
-  /* cudaCheckErrors("Device memory Allocation Error!"); */
   cudaMalloc((void**) &currentGridDevice, GhostN *GhostN);
   cudaCheckErrors("Device memory Allocation Error!");
 
@@ -211,29 +203,20 @@ void simpleCudaGhostPitch(bool* startingGrid, int N, int maxGen)
 
   cudaEventRecord(startTimeDevice, 0);
   /* Copy the initial grid to the device. */
-  /* cudaMemcpy2D(currentGridDevice, pitchStart, initialGameGrid, GhostN * sizeof(bool), GhostN * sizeof(bool) */
-      /* , GhostN, cudaMemcpyHostToDevice); */
-  /* cudaCheckErrors("Initial Memcpy 2D Error"); */
   cudaMemcpy(currentGridDevice, initialGameGrid, GhostN * GhostN *sizeof(bool), cudaMemcpyHostToDevice);
 
   for (int i = 0; i < maxGen; ++i)
   {
-    utilities::ghostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice, GhostN);
-    utilities::ghostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice, GhostN);
-    utilities::ghostCorners<<< 1, 1 >>>(currentGridDevice, GhostN);
-    /* simpleGhostNextGenerationKernelPitch<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice, */
-        /* N, pitchStart, pitchDest); */
+    utilities::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice, GhostN,
+        GhostN * sizeof(bool));
+    utilities::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice, GhostN,
+        GhostN * sizeof(bool));
+    utilities::updateGhostCorners<<< 1, 1 >>>(currentGridDevice, GhostN, GhostN * sizeof(bool));
     simpleGhostNextGenerationKernel<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice,  N);
-    /* cudaDeviceSynchronize(); */
-    /* cudaCheckErrors("Exec Error"); */
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
-  /* cudaMemcpy2D(finalGameGrid, GhostN * sizeof(bool), currentGridDevice, pitchStart, GhostN * sizeof(bool), */
-      /* GhostN, cudaMemcpyDeviceToHost); */
-  /* cudaCheckErrors("Final Memcpy 2D Error"); */
   cudaMemcpy(finalGameGrid, currentGridDevice, GhostN *GhostN * sizeof(bool), cudaMemcpyDeviceToHost);
-
 
   cudaEventRecord(endTimeDevice, 0);
   cudaEventSynchronize(endTimeDevice);
@@ -306,55 +289,21 @@ __global__ void simpleNextGenerationKernelPitch(bool* currentGrid, bool* nextGri
   return;
 }
 
-__global__ void ghostRows(bool* Grid, int N)//Does not  copy corners twp
-{
-  int x = blockDim.x * blockIdx.x + threadIdx.x + 1;
-  if (x < N - 1)
-  {
-    //The first and last columns are to be wrriten
-    Grid[toLinearIndex(N - 1, x, N)] = Grid[toLinearIndex(1, x, N)];  //write bottom to top
-    Grid[toLinearIndex(0, x, N)] = Grid[toLinearIndex(N - 2, x, N)];  //write top to bottom
-  }
-}
-__global__ void ghostCols(bool* Grid,int N)//Does not copy corners
-{
-  int y = blockDim.x * blockIdx.x + threadIdx.x + 1;
-  if (y< N-1)
-  {
-    //std:cout<<id;
-    Grid[toLinearIndex(y, N - 1, N)] = Grid[toLinearIndex(y, 1, N)];  //write left  to   right
-    Grid[toLinearIndex(y, 0, N)] = Grid[toLinearIndex(y, N - 2, N)];  //write right  to left
-
-  }
-}
-
-__global__ void ghostCorners(bool* grid, int N)
-{
-  grid[toLinearIndex(0, 0, N)] = grid[toLinearIndex(N-2, N - 2, N)];//(0,0)-->(N-2,N-2)
-  grid[toLinearIndex(N-1, N - 1, N)] = grid[toLinearIndex(1, 1, N)];//(N-1,N-1)-->(1,1)
-  grid[toLinearIndex(0, N - 1, N)] = grid[toLinearIndex(N - 2, 1, N)];//(0,N-1)-->(N-2,1)
-  grid[toLinearIndex(N - 1, 0, N)] = grid[toLinearIndex(1, N - 2, N)];//(N-1,0)-->(1,N-2)
-}
-
-
 __global__ void simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N)
 {
   int col = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int row = blockIdx.y * blockDim.y + threadIdx.y + 1;
-  /* int index = row * (N + 2) + col; */
   if ((col < N + 1) && (row < N + 1))
   {
-    int x = col;
-    int y = row;
-    size_t up = ((y - 1)) * (N+2);
-    size_t center = y * (N+2);
-    size_t down = ((y + 1) ) * (N+2);
-    size_t left = (x - 1);
-    size_t right = (x + 1);
+    size_t up = (row - 1) * (N + 2);
+    size_t center = row * (N + 2);
+    size_t down = (row + 1) * (N + 2);
+    size_t left = col - 1;
+    size_t right = col + 1;
 
-    int livingNeighbors = calcNeighborsKernel(currentGrid, x, left, right, center, up, down);
-    nextGrid[center + x] = livingNeighbors == 3 ||
-      (livingNeighbors == 2 && currentGrid[x + center]) ? 1 : 0;
+    int livingNeighbors = calcNeighborsKernel(currentGrid, col, left, right, center, up, down);
+    nextGrid[center + col] = livingNeighbors == 3 ||
+      (livingNeighbors == 2 && currentGrid[center + col]) ? 1 : 0;
   }
   return;
 }

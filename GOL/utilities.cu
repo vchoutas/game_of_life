@@ -2,61 +2,50 @@
 
 namespace utilities
 {
-  __global__ void ghostRows(bool* Grid, int N)//Does not  copy corners twp
+  /**
+   * @brief Updates the elements of the extra ghost rows.
+   * @param grid[bool*] The square array that will be updated
+   * @param N[int] The size of the array including the extra rows and columns.
+   * @param pitch[size_t] The stride used to access the next row of the array.
+   * @return void
+   */
+  __global__ void updateGhostRows(bool* grid, int N, size_t pitch)
   {
     int x = blockDim.x * blockIdx.x + threadIdx.x + 1;
     if (x < N - 1)
     {
       //The first and last columns are to be wrriten
-      Grid[toLinearIndex(N - 1, x, N)] = Grid[toLinearIndex(1, x, N)];  //write bottom to top
-      Grid[toLinearIndex(0, x, N)] = Grid[toLinearIndex(N - 2, x, N)];  //write top to bottom
+      grid[toLinearIndex(N - 1, x, pitch)] = grid[toLinearIndex(1, x, pitch)];  //write bottom to top
+      grid[toLinearIndex(0, x, pitch)] = grid[toLinearIndex(N - 2, x, pitch)];  //write top to bottom
     }
   }
 
-  __global__ void ghostRowsPitch(bool* Grid, int N, size_t pitch)//Does not  copy corners twp
-  {
-    int x = blockDim.x * blockIdx.x + threadIdx.x + 1;
-    if (x < N - 1)
-    {
-      //The first and last columns are to be wrriten
-      Grid[toLinearIndex(N - 1, x, pitch)] = Grid[toLinearIndex(1, x, pitch)];  //write bottom to top
-      Grid[toLinearIndex(0, x, pitch)] = Grid[toLinearIndex(N - 2, x, pitch)];  //write top to bottom
-    }
-  }
-
-  __global__ void ghostCols(bool* Grid,int N)//Does not copy corners
+  /**
+   * @brief Updates the elements of the extra ghost columns.
+   * @param grid[bool*] The square array that will be updated
+   * @param N[int] The size of the array including the extra rows and columns.
+   * @param pitch[size_t] The stride used to access the next row of the array.
+   * @return void
+   */
+  __global__ void updateGhostCols(bool* grid, int N, int pitch)
   {
     int y = blockDim.x * blockIdx.x + threadIdx.x + 1;
-    if (y< N-1)
+    if (y < N-1)
     {
       //std:cout<<id;
-      Grid[toLinearIndex(y, N - 1, N)] = Grid[toLinearIndex(y, 1, N)];  //write left  to   right
-      Grid[toLinearIndex(y, 0, N)] = Grid[toLinearIndex(y, N - 2, N)];  //write right  to left
-
+      grid[toLinearIndex(y, N - 1, pitch)] = grid[toLinearIndex(y, 1, pitch)];  //write left  to   right
+      grid[toLinearIndex(y, 0, pitch)] = grid[toLinearIndex(y, N - 2, pitch)];  //write right  to left
     }
   }
 
-  __global__ void ghostColsPitch(bool* Grid, int N, int pitch)//Does not copy corners
-  {
-    int y = blockDim.x * blockIdx.x + threadIdx.x + 1;
-    if (y< N-1)
-    {
-      //std:cout<<id;
-      Grid[toLinearIndex(y, N - 1, pitch)] = Grid[toLinearIndex(y, 1, pitch)];  //write left  to   right
-      Grid[toLinearIndex(y, 0, pitch)] = Grid[toLinearIndex(y, N - 2, pitch)];  //write right  to left
-
-    }
-  }
-
-  __global__ void ghostCorners(bool* grid, int N)
-  {
-    grid[toLinearIndex(0, 0, N)] = grid[toLinearIndex(N-2, N - 2, N)];//(0,0)-->(N-2,N-2)
-    grid[toLinearIndex(N-1, N - 1, N)] = grid[toLinearIndex(1, 1, N)];//(N-1,N-1)-->(1,1)
-    grid[toLinearIndex(0, N - 1, N)] = grid[toLinearIndex(N - 2, 1, N)];//(0,N-1)-->(N-2,1)
-    grid[toLinearIndex(N - 1, 0, N)] = grid[toLinearIndex(1, N - 2, N)];//(N-1,0)-->(1,N-2)
-  }
-
-  __global__ void ghostCornersPitch(bool* grid, int N, int pitch)
+  /**
+   * @brief Updates the corners of the array.
+   * @param grid[bool*] The square array that will be updated
+   * @param N[int] The size of the array including the extra rows and columns.
+   * @param pitch[size_t] The stride used to access the next row of the array.
+   * @return void
+   */
+  __global__ void updateGhostCorners(bool* grid, int N, int pitch)
   {
     grid[toLinearIndex(0, 0, pitch)] = grid[toLinearIndex(N-2, N - 2, pitch)];//(0,0)-->(N-2,N-2)
     grid[toLinearIndex(N-1, N - 1, pitch)] = grid[toLinearIndex(1, 1, pitch)];//(N-1,N-1)-->(1,1)

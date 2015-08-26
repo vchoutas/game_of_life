@@ -34,14 +34,32 @@
 
 namespace utilities
 {
-  __global__ void ghostRows(bool* currentGridDevice,int N);
-  __global__ void ghostCols(bool* currentGridDevice,int N);
-  __global__ void ghostCorners(bool* grid, int N);
+  /**
+   * @brief Updates the elements of the extra ghost rows.
+   * @param grid[bool*] The square array that will be updated
+   * @param N[int] The size of the array including the extra rows and columns.
+   * @param pitch[size_t] The stride used to access the next row of the array.
+   * @return void
+   */
+  __global__ void updateGhostRows(bool* grid, int N, size_t pitch);
 
+  /**
+   * @brief Updates the elements of the extra ghost columns.
+   * @param grid[bool*] The square array that will be updated
+   * @param N[int] The size of the array including the extra rows and columns.
+   * @param pitch[size_t] The stride used to access the next row of the array.
+   * @return void
+   */
+  __global__ void updateGhostCols(bool* grid, int N, int pitch);
 
-  __global__ void ghostRowsPitch(bool* Grid, int N, size_t pitch);
-  __global__ void ghostColsPitch(bool* Grid, int N, int pitch);
-  __global__ void ghostCornersPitch(bool* grid, int N, int pitch);
+  /**
+   * @brief Updates the corners of the array.
+   * @param grid[bool*] The square array that will be updated
+   * @param N[int] The size of the array including the extra rows and columns.
+   * @param pitch[size_t] The stride used to access the next row of the array.
+   * @return void
+   */
+  __global__ void updateGhostCorners(bool* grid, int N, int pitch);
 
   void read_from_file(bool *X, std::string filename, size_t N);
   bool readFile(bool *X, std::string filename, size_t N);
