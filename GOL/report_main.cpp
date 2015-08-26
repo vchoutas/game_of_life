@@ -3,7 +3,7 @@
 #include "serial.h"
 #include "simple_cuda.cuh"
 #include "many_cuda.cuh"
-#include "utilities.h"
+#include "utilities.cuh"
 
 int main(int argc, char *argv[])
 {
@@ -54,9 +54,9 @@ int main(int argc, char *argv[])
 
   simpleCudaGhostPitch(startingGrid, N, maxGen);
 
-  multiCellCudaNaive(startingGrid, N, maxGen);
-
   multiCellCuda(startingGrid, N, maxGen);
+
+  multiCellCudaGhost(startingGrid, N, maxGen);
 
   delete[] startingGrid;
   return 0;

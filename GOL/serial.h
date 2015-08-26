@@ -1,7 +1,7 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
-#include "utilities.h"
+#include "utilities.cuh"
 
 namespace serial
 {

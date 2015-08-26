@@ -170,7 +170,6 @@ void simpleCudaGhostPitch(bool* startingGrid, int N, int maxGen)
     return;
   }
 
-
   utilities::generate_ghost_table(startingGrid, initialGameGrid, N);
   /* utilities::print(initialGameGrid, N + 2); */
   bool* currentGridDevice;
@@ -199,9 +198,10 @@ void simpleCudaGhostPitch(bool* startingGrid, int N, int maxGen)
   dim3 threadNum(16, 16);
   //imperfect division creates problems(we have to use if)
   dim3 blocks((GhostN) / threadNum.x + 1, (GhostN) / threadNum.y + 1);//CREATE MACRO CALLED CEIL
-  dim3 ghostBlockSize(16, 1);
-  dim3 ghostGridRowsSize(N/ghostBlockSize.x + 1, 1);//It will not copy the corners
-  dim3 ghostGridColSize(N/ghostBlockSize.x + 1, 1);//It coppies corners tooo
+
+  dim3 ghostMatThreads(16, 1);
+  dim3 ghostGridRowsSize(N / ghostMatThreads.x + 1, 1);//It will not copy the corners
+  dim3 ghostGridColSize(N / ghostMatThreads.x + 1, 1);//It coppies corners tooo
 
   cudaEvent_t startTimeDevice, endTimeDevice;
   cudaEventCreate(&startTimeDevice);
@@ -218,12 +218,14 @@ void simpleCudaGhostPitch(bool* startingGrid, int N, int maxGen)
 
   for (int i = 0; i < maxGen; ++i)
   {
-    ghostRows<<< ghostGridRowsSize, ghostBlockSize>>>(currentGridDevice, GhostN);
-    ghostCols<<< ghostGridColSize,  ghostBlockSize>>>(currentGridDevice, GhostN);
-    ghostCorners<<< 1, 1 >>>(currentGridDevice, GhostN);
+    utilities::ghostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice, GhostN);
+    utilities::ghostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice, GhostN);
+    utilities::ghostCorners<<< 1, 1 >>>(currentGridDevice, GhostN);
     /* simpleGhostNextGenerationKernelPitch<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice, */
         /* N, pitchStart, pitchDest); */
     simpleGhostNextGenerationKernel<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice,  N);
+    /* cudaDeviceSynchronize(); */
+    /* cudaCheckErrors("Exec Error"); */
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
@@ -339,11 +341,11 @@ __global__ void simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGri
 {
   int col = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int row = blockIdx.y * blockDim.y + threadIdx.y + 1;
-  int index = row * (N + 2) + col;
-  if (col < N+1 && row < N+1)
+  /* int index = row * (N + 2) + col; */
+  if ((col < N + 1) && (row < N + 1))
   {
     int x = col;
-    int y = (index - x) / (N + 2);
+    int y = row;
     size_t up = ((y - 1)) * (N+2);
     size_t center = y * (N+2);
     size_t down = ((y + 1) ) * (N+2);

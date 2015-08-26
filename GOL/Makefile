@@ -22,8 +22,8 @@ simple_cuda.o: simple_cuda.cu simple_cuda.cuh
 	$(compiler) -c simple_cuda.cu $(NVCCFlags)
 many_cuda.o: many_cuda.cu many_cuda.cuh
 	$(compiler) -c many_cuda.cu $(NVCCFlags)
-utilities.o: utilities.cpp utilities.h
-	$(compiler) -c utilities.cpp $(NVCCFlags)
+utilities.o: utilities.cu utilities.cuh
+	$(compiler) -c utilities.cu $(NVCCFlags)
 run: $(TARGET).out
 	./$(TARGET).out $(filename) $(N) $(maxGen)
 clean:

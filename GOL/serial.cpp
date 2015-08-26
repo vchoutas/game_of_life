@@ -1,6 +1,5 @@
 #include <sys/time.h>
 #include "serial.h"
-#include "utilities.h"
 
 namespace serial
 {
