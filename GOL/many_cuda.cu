@@ -82,6 +82,95 @@ void multiCellCuda(bool* startingGrid, int N, int maxGen)
   return;
 }
 
+
+void multiCellCudaNewGhost(bool* startingGrid, int N, int maxGen)
+{
+  std::string prefix("[Many Cells per Thread New Ghost Version]: ");
+  int GhostN = N + 2;
+
+  bool* initialGameGrid = new bool[(GhostN) * (GhostN)];
+  if (initialGameGrid == NULL)
+  {
+    std::cout << prefix << "Could not allocate memory for the initial grid array!" << std::endl;
+    return;
+  }
+
+
+  bool* finalGameGrid = new bool[(GhostN) * (GhostN)];
+  if (finalGameGrid == NULL)
+  {
+    std::cout << prefix << "Could not allocate memory for the final grid array!" << std::endl;
+    return;
+  }
+
+  utilities::generate_ghost_table(startingGrid, initialGameGrid, N);
+  /* utilities::print(initialGameGrid, N + 2); */
+  bool* currentGridDevice;
+  bool* nextGridDevice;
+
+  cudaMalloc((void**) &currentGridDevice, GhostN *GhostN);
+  cudaCheckErrors("Device memory Allocation Error!");
+
+  cudaMalloc((void**) &nextGridDevice, GhostN *GhostN);
+  cudaCheckErrors("Device memory Allocation Error!");
+
+  if (currentGridDevice == NULL || nextGridDevice == NULL)
+  {
+    std::cout << prefix << "Unable to allocate Device Memory!" << std::endl;
+    return;
+  }
+
+  dim3 threadNum(16, 16);
+  //imperfect division creates problems(we have to use if)
+  dim3 blocks(std::min(GhostN / (threadNum.x * CELLPERTHR) + 1, (unsigned int)MAXBLOCKS),
+      std::min(GhostN / (threadNum.y * CELLPERTHR) + 1, (unsigned int)MAXBLOCKS));
+
+  dim3 ghostMatThreads(16, 1);
+  dim3 ghostGridRowsSize(N / ghostMatThreads.x + 1, 1);
+  dim3 ghostGridColSize(N / ghostMatThreads.x + 1, 1);
+
+  cudaEvent_t startTimeDevice, endTimeDevice;
+  cudaEventCreate(&startTimeDevice);
+  cudaCheckErrors("Event Initialization Error");
+  cudaEventCreate(&endTimeDevice);
+  cudaCheckErrors("Event Initialization Error");
+
+  cudaEventRecord(startTimeDevice, 0);
+  /* Copy the initial grid to the device. */
+  cudaMemcpy(currentGridDevice, initialGameGrid, GhostN * GhostN *sizeof(bool), cudaMemcpyHostToDevice);
+
+  for (int i = 0; i < maxGen; ++i)
+  {
+    utilities::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice, GhostN,
+        GhostN * sizeof(bool));
+    utilities::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice, GhostN,
+        GhostN * sizeof(bool));
+    utilities::updateGhostCorners<<< 1, 1 >>>(currentGridDevice, GhostN, GhostN * sizeof(bool));
+    multiGhostNextGenerationKernel<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice,  N);
+    SWAP(currentGridDevice, nextGridDevice);
+  }
+  // Copy the final grid back to the host memory.
+  cudaMemcpy(finalGameGrid, currentGridDevice, GhostN *GhostN * sizeof(bool), cudaMemcpyDeviceToHost);
+
+  cudaEventRecord(endTimeDevice, 0);
+  cudaEventSynchronize(endTimeDevice);
+
+  float time;
+  cudaEventElapsedTime(&time, startTimeDevice, endTimeDevice);
+  std::cout << std::endl << prefix << "Execution Time is = <"
+    << time / 1000.0f << "> seconds" << std::endl;
+
+  utilities::countGhost(finalGameGrid, N, N, prefix);
+  /* utilities::print(finalGameGrid, N + 2); */
+  cudaFree(currentGridDevice);
+  cudaFree(nextGridDevice);
+  cudaDeviceReset();
+
+  delete[] finalGameGrid;
+  return;
+}
+
+
 void multiCellCudaGhost(bool* startingGrid, int N, int maxGen)
 {
   std::string prefix("[Ghost Many Cells per Thread Version]: ");
@@ -230,22 +319,22 @@ __global__ void multiGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid
   size_t col = (blockIdx.x * blockDim.x + threadIdx.x) * CELLPERTHR + 1;
 
   bool localGrid[CELLPERTHR + 2][CELLPERTHR + 2];
-  size_t yLim = CELLPERTHR > N + 1 - row ? N + 1 - row: CELLPERTHR;
-  size_t xLim = CELLPERTHR > N + 1 - col ? N + 1 - col: CELLPERTHR;
-  for (size_t i = 0; i < yLim + 2; i++)
+  //size_t yLim = CELLPERTHR > N + 1 - row ? N + 1 - row: CELLPERTHR;
+  //size_t xLim = CELLPERTHR > N + 1 - col ? N + 1 - col: CELLPERTHR;
+  for (size_t i = 0; i < CELLPERTHR + 2; i++)
   {
     size_t y = (row + i - 1) * (N + 2);
-    for (size_t j = 0; j < xLim + 2; j++)
+    for (size_t j = 0; j < CELLPERTHR + 2; j++)
     {
       size_t x = col + j - 1;
       localGrid[i][j] = currentGrid[y + x];
     }
   }
 
-  for (size_t i = 1; i < yLim + 1; i++)
+  for (size_t i = 1; i < CELLPERTHR + 1; i++)
   {
     size_t y = __umul24(row + i - 1, N + 2);
-    for (size_t j = 1; j < xLim + 1; j++)
+    for (size_t j = 1; j < CELLPERTHR + 1; j++)
     {
       int livingNeighbors = localGrid[i - 1][j - 1] + localGrid[i - 1][j]
         + localGrid[i - 1][j + 1] + localGrid[i][j - 1]
@@ -256,24 +345,6 @@ __global__ void multiGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid
         (livingNeighbors == 2 && localGrid[i][j]) ? 1 : 0;
     }
   }
-
-    /* size_t yLim = CELLPERTHR + row > N + 1 ? N + 1 : CELLPERTHR + row; */
-    /* size_t xLim = CELLPERTHR + col > N + 1 ? N + 1 : CELLPERTHR + col; */
-    /* for (size_t i = row; i < yLim; i++) */
-    /* { */
-      /* size_t y = __umul24(i, N + 2); */
-      /* size_t up = __umul24(i - 1, N + 2); */
-      /* size_t down = __umul24(i + 1, N + 2); */
-      /* for (size_t j = col; j < xLim; j++) */
-      /* { */
-        /* size_t left = j - 1; */
-        /* size_t right = j + 1; */
-        /* int livingNeighbors = manycalcNeighborsKernel(currentGrid, j, left, right, y, up, down); */
-        /* nextGrid[y + j] = livingNeighbors == 3 || */
-          /* (livingNeighbors == 2 && currentGrid[y + j]) ? 1 : 0; */
-      /* } */
-    /* } */
-
   return;
 }
 
@@ -321,3 +392,43 @@ __device__ int calcNeighborsKernel(bool* currentGrid, size_t x, size_t left, siz
     + currentGrid[right + center] + currentGrid[left + down]
     + currentGrid[x + down] + currentGrid[right + down];
 }
+
+
+
+//__global__ void multiGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N)
+//{
+   //A 2D array contaning the data that will be used to calculate
+   //the next generation for the current iteration of the game.
+
+  //size_t row = (blockIdx.y * blockDim.y + threadIdx.y) * CELLPERTHR + 1;
+  //size_t col = (blockIdx.x * blockDim.x + threadIdx.x) * CELLPERTHR + 1;
+//
+  //bool localGrid[CELLPERTHR + 2][CELLPERTHR + 2];
+  //size_t yLim = CELLPERTHR > N + 1 - row ? N + 1 - row: CELLPERTHR;
+  //size_t xLim = CELLPERTHR > N + 1 - col ? N + 1 - col: CELLPERTHR;
+  //for (size_t i = 0; i < CELLPERTHR + 2; i++)
+  //{
+    //size_t y = (row + i - 1) * (N + 2);
+    //for (size_t j = 0; j < CELLPERTHR + 2; j++)
+    //{
+      //size_t x = col + j - 1;
+      //localGrid[i][j] = currentGrid[y + x];
+    //}
+  //}
+//
+  //for (size_t i = 1; i < CELLPERTHR + 1; i++)
+  //{
+    //size_t y = __umul24(row + i - 1, N + 2);
+    //for (size_t j = 1; j < CELLPERTHR + 1; j++)
+    //{
+      //int livingNeighbors = localGrid[i - 1][j - 1] + localGrid[i - 1][j]
+        //+ localGrid[i - 1][j + 1] + localGrid[i][j - 1]
+        //+ localGrid[i][j + 1] + localGrid[i + 1][j - 1] + localGrid[i + 1][j]
+        //+ localGrid[i + 1][j + 1];
+      //size_t x = col + j - 1;
+      //nextGrid[y + x] = livingNeighbors == 3 ||
+        //(livingNeighbors == 2 && localGrid[i][j]) ? 1 : 0;
+    //}
+  //}
+  //return;
+//}

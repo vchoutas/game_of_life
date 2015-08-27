@@ -6,7 +6,6 @@
 #include <cuda_runtime.h>
 
 // Device Functions.
-__global__ void manyNextGenerationKernel(bool* currentGrid, bool* nextGrid, const int N);
 __global__ void multiNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N);
 __global__ void multiCellGhostGridLoop(bool* currentGrid, bool* nextGrid, int N, size_t pitchStart,
     size_t pitchDest);
@@ -21,5 +20,5 @@ __device__ int calcNeighborsKernel(bool* currentGrid, size_t x, size_t left, siz
 // Host Functions.
 void multiCellCuda(bool* startingGrid, int N, int maxGen);
 void multiCellCudaGhost(bool* startingGrid, int N, int maxGen);
-
+void multiCellCudaNewGhost(bool* startingGrid, int N, int maxGen);
 #endif // MANY_CUDA_GOL_H

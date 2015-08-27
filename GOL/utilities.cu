@@ -168,7 +168,7 @@ namespace utilities
     return counter;
   }
 
-  void print(bool* grid,size_t N )
+  void print(bool* grid,int N )
   {
     std::cout<<std::endl;
     if ( N< 20){

@@ -152,7 +152,7 @@ void simpleCudaPitch(bool* startingGrid, int N, int maxGen)
 
 void simpleCudaGhostPitch(bool* startingGrid, int N, int maxGen)
 {
-  std::string prefix("[Ghosts Single Cell per Thread Pitch]: ");
+  std::string prefix("[Ghosts Single Cell per Thread ]: ");
   int GhostN = N + 2;
 
   bool* initialGameGrid = new bool[(GhostN) * (GhostN)];
@@ -192,9 +192,8 @@ void simpleCudaGhostPitch(bool* startingGrid, int N, int maxGen)
   dim3 blocks((GhostN) / threadNum.x + 1, (GhostN) / threadNum.y + 1);//CREATE MACRO CALLED CEIL
 
   dim3 ghostMatThreads(16, 1);
-  dim3 ghostGridRowsSize(N / ghostMatThreads.x + 1, 1);//It will not copy the corners
-  dim3 ghostGridColSize(N / ghostMatThreads.x + 1, 1);//It coppies corners tooo
-
+  dim3 ghostGridRowsSize(N / ghostMatThreads.x + 1, 1);
+  dim3 ghostGridColSize(N / ghostMatThreads.x + 1, 1);
   cudaEvent_t startTimeDevice, endTimeDevice;
   cudaEventCreate(&startTimeDevice);
   cudaCheckErrors("Event Initialization Error");
