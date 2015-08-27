@@ -123,8 +123,9 @@ void multiCellCudaGhost(bool* startingGrid, int N, int maxGen)
 
   // Execute the second version of the many cells per thread gpu implementation.
   dim3 threadNum(16, 16);
-  dim3 blocks(std::min(GhostN / (CELLPERTHR * threadNum.x) + 1, (unsigned int)MAXBLOCKS),
-      std::min(GhostN / (CELLPERTHR * threadNum.y) + 1, (unsigned int)MAXBLOCKS));
+  dim3 blocks(std::min(GhostN / (threadNum.x * CELLPERTHR) + 1, (unsigned int)MAXBLOCKS),
+      std::min(GhostN / (threadNum.y * CELLPERTHR) + 1, (unsigned int)MAXBLOCKS));
+  /* dim3 blocks(16, 16); */
 
   dim3 ghostMatThreads(16, 1);
   dim3 ghostGridRowsSize(N / ghostMatThreads.x + 1, 1);//It will not copy the corners

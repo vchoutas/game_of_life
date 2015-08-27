@@ -3,6 +3,7 @@
 #include "serial.h"
 #include "simple_cuda.cuh"
 #include "many_cuda.cuh"
+#include "shared_cuda.cuh"
 #include "utilities.cuh"
 
 int main(int argc, char *argv[])
@@ -57,6 +58,8 @@ int main(int argc, char *argv[])
   multiCellCuda(startingGrid, N, maxGen);
 
   multiCellCudaGhost(startingGrid, N, maxGen);
+
+  singleCellSharedMem(startingGrid, N, maxGen);
 
   delete[] startingGrid;
   return 0;
