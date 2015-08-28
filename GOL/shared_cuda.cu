@@ -360,17 +360,16 @@ __global__ void multiCellSharedMemKernel(bool* currentGrid, bool* nextGrid, int 
   size_t l_col = threadIdx.x * CELLS_PER_THR;
 
 
-  __shared__ bool localGrid[CELLS_PER_THR + 2][CELLS_PER_THR + 2];
-  for (size_t i = 0; i < CELLS_PER_THR +1; i++)//Must change(the last rowisnt_copied)
+  __shared__ bool localGrid[TILE_SIZE*CELLS_PER_THR + 2][TILE_SIZE*CELLS_PER_THR + 2];
+  for (size_t i = 0; i < CELLS_PER_THR ; i++)//Must change
   {
     size_t y = (g_row + i ) * (N + 2);
-    for (size_t j = 0; j < CELLS_PER_THR +1; j++)//Must change(the last column isnt copied)
+    for (size_t j = 0; j < CELLS_PER_THR ; j++)//Must change
     {
       size_t x = g_col + j ;
-      localGrid[i +l_col ] = currentGrid[y + x];
+      localGrid[j + l_row][i +l_col ] = currentGrid[y + x];
     }
   }
-
   __syncthreads();
 
 
@@ -393,9 +392,6 @@ for (size_t i = 1; i < CELLS_PER_THR + 1; i++)
         (livingNeighbors == 2 && localGrid[li][lj]) ? 1 : 0;
     }
   }
-
-
-
 
   return;
 }
