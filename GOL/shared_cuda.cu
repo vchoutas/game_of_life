@@ -3,9 +3,10 @@
 #include "shared_cuda.cuh"
 #include "utilities.cuh"
 
+#define TILE_SIZE 16
 #define TILE_SIZE_X 16
 #define TILE_SIZE_Y 16
-#define CELLS_PER_THR 8
+#define CELLS_PER_THR 2
 #define MAXBLOCKS 512
 
 
@@ -232,7 +233,7 @@ void multiCellSharedMem(bool* startingGrid, int N, int maxGen){
     return;
   }
 
-  dim3 threadNum(TILE_SIZE_X, TILE_SIZE_Y);
+  dim3 threadNum(TILE_SIZE, TILE_SIZE);
   //imperfect division creates problems(we have to use if)
   dim3 blocks(GhostN/(threadNum.x * CELLS_PER_THR)+ 1, GhostN/( threadNum.y * CELLS_PER_THR) + 1);//CREATE MACRO CALLED CEIL
 
@@ -351,9 +352,51 @@ __global__ void singleCellSharedMemKernel(bool* currentGrid, bool* nextGrid, int
 }
 
 __global__ void multiCellSharedMemKernel(bool* currentGrid, bool* nextGrid, int N){
-  //int xIndex = blockIdx.x * blockDim.x + threadIdx.x + 1;
-  //int yIndex = blockIdx.y * blockDim.y + threadIdx.y + 1;
-  //continue;
+
+  size_t g_row = (blockIdx.y * blockDim.y + threadIdx.y) * CELLS_PER_THR ;
+  size_t g_col = (blockIdx.x * blockDim.x + threadIdx.x) * CELLS_PER_THR ;
+
+  size_t l_row = threadIdx.y * CELLS_PER_THR ;
+  size_t l_col = threadIdx.x * CELLS_PER_THR;
+
+
+  __shared__ bool localGrid[CELLS_PER_THR + 2][CELLS_PER_THR + 2];
+  for (size_t i = 0; i < CELLS_PER_THR +1; i++)//Must change(the last rowisnt_copied)
+  {
+    size_t y = (g_row + i ) * (N + 2);
+    for (size_t j = 0; j < CELLS_PER_THR +1; j++)//Must change(the last column isnt copied)
+    {
+      size_t x = g_col + j ;
+      localGrid[i +l_col ] = currentGrid[y + x];
+    }
+  }
+
+  __syncthreads();
+
+
+for (size_t i = 1; i < CELLS_PER_THR + 1; i++)
+  {
+    size_t y = __umul24(g_row + i , N + 2);
+    size_t li = i + l_col;
+    for (size_t j = 1; j < CELLS_PER_THR + 1; j++)
+    {
+
+      size_t lj = j+ l_row;
+      int livingNeighbors = localGrid[li - 1][lj - 1] + localGrid[li - 1][lj]
+        + localGrid[li - 1][lj + 1] + localGrid[li][lj - 1]
+        + localGrid[li][lj + 1] + localGrid[li + 1][lj - 1] + localGrid[li + 1][lj]
+        + localGrid[li + 1][lj + 1];
+
+
+      size_t x = g_col + j ;
+      nextGrid[y + x] = livingNeighbors == 3 ||
+        (livingNeighbors == 2 && localGrid[li][lj]) ? 1 : 0;
+    }
+  }
+
+
+
+
   return;
 }
 
@@ -362,8 +405,8 @@ __global__ void multiCellSharedMemPitchKernel(bool* currentGrid, bool* nextGrid,
     size_t nextGridPitch){
 
   //Copy the neccesary cells to the shared Memory
-  int xIndex = blockIdx.x * blockDim.x + threadIdx.x + 1;
-  int yIndex = blockIdx.y * blockDim.y + threadIdx.y + 1;
+  int xIndex = blockIdx.x * blockDim.x + threadIdx.x +1;
+  int yIndex = blockIdx.y * blockDim.y + threadIdx.y +1;
 
   int xStride = __umul24(blockDim.x, gridDim.x);
   int yStride = __umul24(blockDim.y, gridDim.y);

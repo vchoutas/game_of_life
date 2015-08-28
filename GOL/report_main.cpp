@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 
   multiCellSharedMem(startingGrid, N, maxGen);
 
-  multiCellSharedMemPitch(startingGrid, N, maxGen);
+  //multiCellSharedMemPitch(startingGrid, N, maxGen);
 
   delete[] startingGrid;
   return 0;
