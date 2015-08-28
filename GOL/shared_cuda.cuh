@@ -8,12 +8,16 @@
 
 void singleCellSharedMem(bool* startingGrid, int N, int maxGen);
 void multiCellSharedMem(bool* startingGrid, int N, int maxGen);
+void multiCellSharedMemPitch(bool* startingGrid, int N, int maxGen);
 
 __global__ void singleCellSharedMemKernel(bool* currentGrid, bool* nextGrid, int N, size_t currentGridPitch,
     size_t nextGridPitch);
 
-__global__ void multiCellSharedMemKernel(bool* currentGrid, bool* nextGrid, int N, size_t currentGridPitch,
+__global__ void multiCellSharedMemKernel(bool* currentGrid, bool* nextGrid, int N);
+
+__global__ void multiCellSharedMemPitchKernel(bool* currentGrid, bool* nextGrid, int N, size_t currentGridPitch,
     size_t nextGridPitch);
+
 
 __device__ inline int manycalcNeighborsKernel(bool* currentGrid, int x, int left,
     int right, int center, int up , int down);

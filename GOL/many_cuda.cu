@@ -85,7 +85,7 @@ void multiCellCuda(bool* startingGrid, int N, int maxGen)
 
 void multiCellCudaNewGhost(bool* startingGrid, int N, int maxGen)
 {
-  std::string prefix("[Many Cells per Thread New Ghost Version]: ");
+  std::string prefix("[Ghost Many Cells per Thread  Version]: ");
   int GhostN = N + 2;
 
   bool* initialGameGrid = new bool[(GhostN) * (GhostN)];
@@ -173,7 +173,7 @@ void multiCellCudaNewGhost(bool* startingGrid, int N, int maxGen)
 
 void multiCellCudaGhost(bool* startingGrid, int N, int maxGen)
 {
-  std::string prefix("[Ghost Many Cells per Thread Version]: ");
+  std::string prefix("[Ghost Many Cells per Thread Pitch Version]: ");
 
   int GhostN = N + 2;
   bool* initialGameGrid = new bool[GhostN * GhostN];

@@ -150,7 +150,7 @@ void simpleCudaPitch(bool* startingGrid, int N, int maxGen)
 
 
 
-void simpleCudaGhostPitch(bool* startingGrid, int N, int maxGen)
+void simpleCudaGhost(bool* startingGrid, int N, int maxGen)
 {
   std::string prefix("[Ghosts Single Cell per Thread ]: ");
   int GhostN = N + 2;
@@ -202,20 +202,18 @@ void simpleCudaGhostPitch(bool* startingGrid, int N, int maxGen)
 
   cudaEventRecord(startTimeDevice, 0);
   /* Copy the initial grid to the device. */
-  cudaMemcpy(currentGridDevice, initialGameGrid, GhostN * GhostN *sizeof(bool), cudaMemcpyHostToDevice);
+  cudaMemcpy(currentGridDevice, initialGameGrid, GhostN * GhostN , cudaMemcpyHostToDevice);
 
   for (int i = 0; i < maxGen; ++i)
   {
-    utilities::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice, GhostN,
-        GhostN * sizeof(bool));
-    utilities::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice, GhostN,
-        GhostN * sizeof(bool));
-    utilities::updateGhostCorners<<< 1, 1 >>>(currentGridDevice, GhostN, GhostN * sizeof(bool));
+    utilities::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice, GhostN,GhostN );
+    utilities::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice, GhostN, GhostN);
+    utilities::updateGhostCorners<<< 1, 1 >>>(currentGridDevice, GhostN, GhostN);
     simpleGhostNextGenerationKernel<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice,  N);
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
-  cudaMemcpy(finalGameGrid, currentGridDevice, GhostN *GhostN * sizeof(bool), cudaMemcpyDeviceToHost);
+  cudaMemcpy(finalGameGrid, currentGridDevice, GhostN *GhostN, cudaMemcpyDeviceToHost);
 
   cudaEventRecord(endTimeDevice, 0);
   cudaEventSynchronize(endTimeDevice);
@@ -287,7 +285,6 @@ __global__ void simpleNextGenerationKernelPitch(bool* currentGrid, bool* nextGri
   }
   return;
 }
-
 __global__ void simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N)
 {
   int col = blockIdx.x * blockDim.x + threadIdx.x + 1;

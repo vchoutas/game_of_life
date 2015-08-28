@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
   // memory allocation.
   simpleCudaPitch(startingGrid, N, maxGen);
 
-  simpleCudaGhostPitch(startingGrid, N, maxGen);
+  simpleCudaGhost(startingGrid, N, maxGen);
 
   multiCellCuda(startingGrid, N, maxGen);
 
@@ -62,6 +62,10 @@ int main(int argc, char *argv[])
   multiCellCudaGhost(startingGrid, N, maxGen);
 
   singleCellSharedMem(startingGrid, N, maxGen);
+
+  multiCellSharedMem(startingGrid, N, maxGen);
+
+  multiCellSharedMemPitch(startingGrid, N, maxGen);
 
   delete[] startingGrid;
   return 0;
