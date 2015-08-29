@@ -76,7 +76,7 @@ void singleCellSharedMem(bool* startingGrid, int N, int maxGen){
     utilities::updateGhostCorners<<< 1, 1 >>>(currentGridDevice, GhostN, currentGridPitch);
     singleCellSharedMemKernel<<< blocks, threadNum >>>(currentGridDevice, nextGridDevice, N,
         currentGridPitch, nextGridPitch);
-    /* cudaDeviceSynchronize(); */
+    cudaDeviceSynchronize();
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
@@ -279,76 +279,84 @@ void multiCellSharedMem(bool* startingGrid, int N, int maxGen){
 }
 
 __global__ void singleCellSharedMemKernel(bool* currentGrid, bool* nextGrid, int N, size_t currentGridPitch,
-    size_t nextGridPitch){
+    size_t nextGridPitch)
+{
+  size_t startPoint = blockIdx.y * blockDim.y * currentGridPitch + blockIdx.x * blockDim.x;
+
   size_t row = blockIdx.y * blockDim.y + threadIdx.y + 1;
   size_t col = blockIdx.x * blockDim.x + threadIdx.x + 1;
-  int i = threadIdx.y + 1;
-  int j = threadIdx.x + 1;
 
-  __shared__ bool localGrid[TILE_SIZE_Y + 2][TILE_SIZE_X + 2];
+  int i = threadIdx.y;
+  int j = threadIdx.x;
+
+  __shared__ bool localGrid[TILE_SIZE + 2][TILE_SIZE + 2];
 
 
-  localGrid[i][j] = currentGrid[row * currentGridPitch + col];
-  if (i == 1)
-    localGrid[i - 1][j] = currentGrid[(row - 1) * currentGridPitch + col];
-  if (j == 1)
-    localGrid[i][j - 1] = currentGrid[row * currentGridPitch + col - 1];
-  if (i == TILE_SIZE_Y)
-    localGrid[i + 1][j] = currentGrid[(row + 1) * currentGridPitch + col];
-  if (j == TILE_SIZE_X)
-    localGrid[i][j + 1] = currentGrid[row * currentGridPitch + col + 1];
+  int linIndex = i * TILE_SIZE + j;
+  int jj = linIndex % (TILE_SIZE + 2);
+  int ii = (linIndex - jj) / (TILE_SIZE + 2);
+  int I = ii * currentGridPitch + jj;
 
-  if (i == 1 && j == 1)
-    localGrid[i - 1][j - 1] = currentGrid[(row - 1) * currentGridPitch + col - 1];
-  if (i == 1 && j == TILE_SIZE_X)
-    localGrid[i - 1][j + 1] = currentGrid[(row - 1) * currentGridPitch + col + 1];
-  if (i == TILE_SIZE_Y && j == 1)
-    localGrid[i + 1][j - 1] = currentGrid[(row + 1) * currentGridPitch + col - 1];
-  if (i == TILE_SIZE_Y && j == TILE_SIZE_X)
-    localGrid[i + 1][j + 1] = currentGrid[(row + 1) * currentGridPitch + col + 1];
+  localGrid[ii][jj] = currentGrid[startPoint + I];
 
-  /* __syncthreads(); */
+  int linIndex2 = TILE_SIZE * TILE_SIZE + i * TILE_SIZE + j;
+  int jj2 = linIndex2 % (TILE_SIZE + 2);
+  int ii2 = (linIndex2 - jj2) / (TILE_SIZE + 2);
 
-  /* localGrid[i][j] = currentGrid[row * currentGridPitch + col]; */
+  int I2 = ii2 * currentGridPitch + jj2;
+
+  if ((jj2 < TILE_SIZE + 2) && (ii2 < TILE_SIZE + 2) && (I2 < (N+2) * (N+2)))
+  {
+    localGrid[ii2][jj2] = currentGrid[startPoint + I2];
+  }
+
   __syncthreads();
 
-  /* if (i > 0 && i <= TILE_SIZE && j > 0 && j <= TILE_SIZE) */
-  /* { */
+  if ((row < N + 1) && (col < N + 1))
+  {
+    i++;
+    j++;
     int livingNeighbors = localGrid[i - 1][j - 1] + localGrid[i - 1][j]
       + localGrid[i - 1][j + 1] + localGrid[i][j - 1] + localGrid[i][j + 1]
       + localGrid[i + 1][j - 1] + localGrid[i + 1][j] + localGrid[i + 1][j + 1];
     nextGrid[row * nextGridPitch + col] = livingNeighbors == 3 ||
       (livingNeighbors == 2 && localGrid[i][j]) ? 1 : 0;
+  }
+
+
+/*
+ *   localGrid[i][j] = currentGrid[row * currentGridPitch + col];
+ *
+ *   if (i == 1)
+ *     localGrid[i - 1][j] = currentGrid[(row - 1) * currentGridPitch + col];
+ *   if (j == 1)
+ *     localGrid[i][j - 1] = currentGrid[row * currentGridPitch + col - 1];
+ *   if (i == TILE_SIZE_Y)
+ *     localGrid[i + 1][j] = currentGrid[(row + 1) * currentGridPitch + col];
+ *   if (j == TILE_SIZE_X)
+ *     localGrid[i][j + 1] = currentGrid[row * currentGridPitch + col + 1];
+ *
+ *   if (i == 1 && j == 1)
+ *     localGrid[i - 1][j - 1] = currentGrid[(row - 1) * currentGridPitch + col - 1];
+ *   if (i == 1 && j == TILE_SIZE_X)
+ *     localGrid[i - 1][j + 1] = currentGrid[(row - 1) * currentGridPitch + col + 1];
+ *   if (i == TILE_SIZE_Y && j == 1)
+ *     localGrid[i + 1][j - 1] = currentGrid[(row + 1) * currentGridPitch + col - 1];
+ *   if (i == TILE_SIZE_Y && j == TILE_SIZE_X)
+ *     localGrid[i + 1][j + 1] = currentGrid[(row + 1) * currentGridPitch + col + 1];
+ *
+ *   __syncthreads();
+ *
+ *   [> if (i > 0 && i <= TILE_SIZE && j > 0 && j <= TILE_SIZE) <]
+ *   [> { <]
+ *     int livingNeighbors = localGrid[i - 1][j - 1] + localGrid[i - 1][j]
+ *       + localGrid[i - 1][j + 1] + localGrid[i][j - 1] + localGrid[i][j + 1]
+ *       + localGrid[i + 1][j - 1] + localGrid[i + 1][j] + localGrid[i + 1][j + 1];
+ *     nextGrid[row * nextGridPitch + col] = livingNeighbors == 3 ||
+ *       (livingNeighbors == 2 && localGrid[i][j]) ? 1 : 0;
+ */
   /* } */
   return;
-  /* int livingNeighbors = localGrid[i - 1][j - 1] + localGrid[i - 1][j] */
-    /* + localGrid[i - 1][j + 1] + localGrid[i][j - 1] + localGrid[i][j + 1] */
-    /* + localGrid[i + 1][j - 1] + localGrid[i + 1][j] + localGrid[i + 1][j + 1]; */
-  /* nextGrid[row * nextGridPitch + col] = livingNeighbors == 3 || */
-    /* (livingNeighbors == 2 && localGrid[i][j]) ? 1 : 0; */
-
-  /* int xIndex = blockIdx.x * blockDim.x + threadIdx.x + 1; */
-  /* int yIndex = blockIdx.y * blockDim.y + threadIdx.y + 1; */
-  /* int xStride = __umul24(blockDim.x, gridDim.x); */
-  /* int yStride = __umul24(blockDim.y, gridDim.y); */
-  /* for (int i = blockIdx.y * blockIdx.y + threadIdx.y; */
-      /* i < N + 1; i += blockDim.y * gridDim.y) */
-  /* { */
-    /* size_t y = __umul24(i, currentGridPitch); */
-    /* size_t yNext = __umul24(i, nextGridPitch); */
-    /* size_t up = __umul24(i - 1, currentGridPitch); */
-    /* size_t down = __umul24(i + 1, currentGridPitch); */
-    /* for (int j = xIndex; j < N + 1; j += xStride) */
-    /* { */
-      /* size_t left = j - 1; */
-      /* size_t right = j + 1; */
-
-      /* int livingNeighbors = sharedCalcNeighborsKernel(currentGrid, j, left, right, y, up, down); */
-      /* nextGrid[yNext + j] = livingNeighbors == 3 || */
-        /* (livingNeighbors == 2 && currentGrid[y + j]) ? 1 : 0; */
-    /* } */
-  /* } */
-
 }
 
 __global__ void multiCellSharedMemKernel(bool* currentGrid, bool* nextGrid, int N){
@@ -463,10 +471,11 @@ __global__ void multiCellSharedMemPitchKernel(bool* currentGrid, bool* nextGrid,
         (livingNeighbors == 2 && localGrid[threadRowIndex][threadColIndex]) ? 1 : 0;
 
 
-        }
-     }
-      return;
+
+    }
   }
+  return;
+}
 
 
 __device__ int sharedCalcNeighborsKernel(bool* currentGrid, size_t x, size_t left, size_t right, size_t center,
