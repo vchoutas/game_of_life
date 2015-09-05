@@ -173,7 +173,7 @@ void multiCellCudaNewGhost(bool* startingGrid, int N, int maxGen)
 
 void multiCellCudaGhost(bool* startingGrid, int N, int maxGen)
 {
-  std::string prefix("[Ghost Many Cells per Thread Pitch Version]: ");
+  std::string prefix("[Grid Size Loop with Ghost Cells Kernel]: ");
 
   int GhostN = N + 2;
   bool* initialGameGrid = new bool[GhostN * GhostN];

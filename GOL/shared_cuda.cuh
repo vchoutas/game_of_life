@@ -19,6 +19,9 @@ __global__ void multiCellSharedMemPitchKernel(bool* currentGrid, bool* nextGrid,
     size_t nextGridPitch);
 
 
+__global__ void multiCellSharedMemKernel2(bool* currentGrid, bool* nextGrid, int N);
+
+
 __device__ inline int manycalcNeighborsKernel(bool* currentGrid, int x, int left,
     int right, int center, int up , int down);
 

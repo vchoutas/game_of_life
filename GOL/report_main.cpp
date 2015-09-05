@@ -39,25 +39,29 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  // Execute the serial code.
-  serial::execSerial(startingGrid, N, maxGen);
-
-  // Execute the serial code using the ghost cells to simulate the cyclic world
-  // instead of the modulus operations.
-  serial::execSerialGhost(startingGrid , N, maxGen);
-
-  // Execute the simple version of the parallel Game of Life algorithm.
-  simpleCuda(startingGrid, N, maxGen);
-
-  // Execute the simple version of the parallel Game of Life with better
-  // memory allocation.
-  simpleCudaPitch(startingGrid, N, maxGen);
+/*
+ *   // Execute the serial code.
+ *   serial::execSerial(startingGrid, N, maxGen);
+ *
+ *   // Execute the serial code using the ghost cells to simulate the cyclic world
+ *   // instead of the modulus operations.
+ *   serial::execSerialGhost(startingGrid , N, maxGen);
+ *
+ *   // Execute the simple version of the parallel Game of Life algorithm.
+ *   simpleCuda(startingGrid, N, maxGen);
+ *
+ *   // Execute the simple version of the parallel Game of Life with better
+ *   // memory allocation.
+ *   simpleCudaPitch(startingGrid, N, maxGen);
+ */
 
   simpleCudaGhost(startingGrid, N, maxGen);
 
-  multiCellCuda(startingGrid, N, maxGen);
+  /*
+   * multiCellCuda(startingGrid, N, maxGen);
+   */
 
-  multiCellCudaNewGhost(startingGrid, N, maxGen);
+  // multiCellCudaNewGhost(startingGrid, N, maxGen);
 
   multiCellCudaGhost(startingGrid, N, maxGen);
 
