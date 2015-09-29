@@ -4,8 +4,8 @@
 #include "utilities.cuh"
 
 #define TILE_SIZE 16
-#define TILE_SIZE_X 32
-#define TILE_SIZE_Y 8
+#define TILE_SIZE_X 16
+#define TILE_SIZE_Y 16
 #define CELLS_PER_THR 2
 #define MAXBLOCKS 512
 
@@ -237,8 +237,13 @@ void multiCellSharedMem(bool* startingGrid, int N, int maxGen){
   //imperfect division creates problems(we have to use if)
   /* dim3 blocks(GhostN/(threadNum.x * CELLS_PER_THR) + 1, GhostN/( threadNum.y * CELLS_PER_THR) + 1);//CREATE MACRO CALLED CEIL */
 
-  dim3 blocks(N / (threadNum.x * CELLS_PER_THR) + 1,
-      N / (threadNum.y * CELLS_PER_THR) + 1);//CREATE MACRO CALLED CEIL
+  /* dim3 blocks(N / (threadNum.x * CELLS_PER_THR) + 1, */
+      /* N / (threadNum.y * CELLS_PER_THR) + 1);//CREATE MACRO CALLED CEIL */
+
+  dim3 blocks(std::min(
+        (N  + (threadNum.x * CELLS_PER_THR) -1) / (threadNum.x * CELLS_PER_THR), (unsigned int)MAXBLOCKS),
+      std::min(
+        (N +(threadNum.y * CELLS_PER_THR) -1)/ (threadNum.y * CELLS_PER_THR) , (unsigned int)MAXBLOCKS));
 
   dim3 ghostMatThreads(16, 1);
   dim3 ghostGridRowsSize(N / ghostMatThreads.x + 1, 1);
@@ -258,7 +263,6 @@ void multiCellSharedMem(bool* startingGrid, int N, int maxGen){
     utilities::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice, GhostN, GhostN);
     utilities::updateGhostCorners<<< 1, 1 >>>(currentGridDevice, GhostN, GhostN);
     multiCellSharedMemKernel<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice,  N);
-    cudaDeviceSynchronize();
     SWAP(currentGridDevice, nextGridDevice);
   }
   // Copy the final grid back to the host memory.
@@ -352,17 +356,17 @@ __global__ void multiCellSharedMemKernel(bool* currentGrid, bool* nextGrid, int 
   /* __shared__ bool localGrid[(TILE_SIZE_Y + 2) * (TILE_SIZE_X + 2)]; */
   size_t startPoint = blockIdx.y * blockDim.y * (N + 2) + blockIdx.x * blockDim.x;
 
-  int linIndex = i * TILE_SIZE + j;
-  int jj = linIndex % (TILE_SIZE + 2);
-  int ii = (linIndex - jj) / (TILE_SIZE + 2);
+  int linIndex = i * TILE_SIZE_X + j;
+  int jj = linIndex % (TILE_SIZE_X + 2);
+  int ii = (linIndex - jj) / (TILE_SIZE_X + 2);
   int I = ii * (N + 2) + jj;
 
-  int linIndex2 = TILE_SIZE * TILE_SIZE + linIndex;
-  int jj2 = linIndex2 % (TILE_SIZE + 2);
-  int ii2 = (linIndex2 - jj2) / (TILE_SIZE + 2);
+  int linIndex2 = TILE_SIZE_X * TILE_SIZE_Y + linIndex;
+  int jj2 = linIndex2 % (TILE_SIZE_X + 2);
+  int ii2 = (linIndex2 - jj2) / (TILE_SIZE_X + 2);
   int I2 = ii2 * (N + 2) + jj2;
 
-  __shared__ bool localGrid[TILE_SIZE + 2][TILE_SIZE + 2];
+  __shared__ bool localGrid[TILE_SIZE_Y + 2][TILE_SIZE_X + 2];
 
   for (int m = 0; m < CELLS_PER_THR; m++)
   {
@@ -381,7 +385,7 @@ __global__ void multiCellSharedMemKernel(bool* currentGrid, bool* nextGrid, int 
 
       localGrid[ii][jj] = currentGrid[startPoint + I];
 
-      if ((jj2 < TILE_SIZE + 2) && (ii2 < TILE_SIZE + 2) && (I2 < (N+2) * (N+2)))
+      if ((jj2 < TILE_SIZE_X + 2) && (ii2 < TILE_SIZE_Y + 2) && (I2 < (N+2) * (N+2)))
         localGrid[ii2][jj2] = currentGrid[startPoint + I2];
 
       __syncthreads();

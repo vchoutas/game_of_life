@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 
   multiCellCudaGhost(startingGrid, N, maxGen);
 
-  singleCellSharedMem(startingGrid, N, maxGen);
+  // singleCellSharedMem(startingGrid, N, maxGen);
 
   multiCellSharedMem(startingGrid, N, maxGen);
 

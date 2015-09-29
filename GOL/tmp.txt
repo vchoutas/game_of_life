@@ -1,0 +1,190 @@
+Available Metrics:
+                            Name   Description
+Device 0 (GeForce GTX 480):
+        l1_cache_global_hit_rate:  Hit rate in L1 cache for global loads
+
+               branch_efficiency:  Ratio of non-divergent branches to total branches
+
+         l1_cache_local_hit_rate:  Hit rate in L1 cache for local loads and stores
+
+                   sm_efficiency:  The percentage of time at least one warp is active on a multiprocessor
+
+              achieved_occupancy:  Ratio of the average active warps per active cycle to the maximum number of warps supported on a multiprocessor
+
+        gld_requested_throughput:  Requested global memory load throughput
+
+        gst_requested_throughput:  Requested global memory store throughput
+
+                             ipc:  Instructions executed per cycle
+
+          sm_efficiency_instance:  The percentage of time at least one warp is active on a multiprocessor
+
+                    ipc_instance:  Instructions executed per cycle
+
+                   inst_per_warp:  Average number of instructions executed by each warp
+
+                gld_transactions:  Number of global memory load transactions
+
+                gst_transactions:  Number of global memory store transactions
+
+         local_load_transactions:  Number of local memory load transactions
+
+        local_store_transactions:  Number of local memory store transactions
+
+        shared_load_transactions:  Number of shared memory load transactions
+
+       shared_store_transactions:  Number of shared memory store transactions
+
+    gld_transactions_per_request:  Average number of global memory load transactions performed for each global memory load
+
+    gst_transactions_per_request:  Average number of global memory store transactions performed for each global memory store
+
+local_load_transactions_per_request:  Average number of local memory load transactions performed for each local memory load
+
+local_store_transactions_per_request:  Average number of local memory store transactions performed for each local memory store
+
+shared_load_transactions_per_request:  Average number of shared memory load transactions performed for each shared memory load
+
+shared_store_transactions_per_request:  Average number of shared memory store transactions performed for each shared memory store
+
+           local_load_throughput:  Local memory load throughput
+
+          local_store_throughput:  Local memory store throughput
+
+          shared_load_throughput:  Shared memory load throughput
+
+         shared_store_throughput:  Shared memory store throughput
+
+               shared_efficiency:  Ratio of requested shared memory throughput to required shared memory throughput
+
+                        flops_sp:  Single-precision floating point operations executed
+
+                    flops_sp_add:  Single-precision floating point add operations executed
+
+                    flops_sp_mul:  Single-precision floating point multiply operations executed
+
+                    flops_sp_fma:  Single-precision floating point multiply accumulate operations executed
+
+                        flops_dp:  Double-precision floating point operations executed
+
+                    flops_dp_add:  Double-precision floating point add operations executed
+
+                    flops_dp_mul:  Double-precision floating point multiply operations executed
+
+                    flops_dp_fma:  Double-precision floating point multiply accumulate operations executed
+
+                flops_sp_special:  Single-precision floating point special operations executed
+
+                stall_inst_fetch:  Percentage of stalls occurring because the next assembly instruction has not yet been fetched
+
+           stall_exec_dependency:  Percentage of stalls occurring because an input required by the instruction is not yet available
+
+              stall_data_request:  Percentage of stalls occurring because a memory operation cannot be performed due to the required resources not being available or fully utilized, or because too many requests of a given type are outstanding
+
+                      stall_sync:  Percentage of stalls occurring because the warp is blocked at a __syncthreads() call
+
+                   inst_executed:  The number of instructions executed
+
+                   stall_texture:  Percentage of stalls occurring because the texture sub-system is fully utilized or has too many outstanding requests
+
+                     stall_other:  Percentage of stalls occurring due to miscellaneous reasons
+
+            inst_replay_overhead:  Average number of replays for each instruction executed
+
+          shared_replay_overhead:  Average number of replays due to shared memory conflicts for each instruction executed
+
+    global_cache_replay_overhead:  Average number of replays due to global memory cache misses for each instruction executed
+
+              tex_cache_hit_rate:  Texture cache hit rate
+
+            tex_cache_throughput:  Texture cache throughput
+
+            dram_read_throughput:  Device memory read throughput
+
+           dram_write_throughput:  Device memory write throughput
+
+                  gst_throughput:  Global memory store throughput
+
+                  gld_throughput:  Global memory load throughput
+
+       warp_execution_efficiency:  Ratio of the average active threads per warp to the maximum number of threads per warp supported on a multiprocessor
+
+                  gld_efficiency:  Ratio of requested global memory load throughput to required global memory load throughput
+
+                  gst_efficiency:  Ratio of requested global memory store throughput to required global memory store throughput
+
+           local_replay_overhead:  Average number of replays due to local memory accesses for each instruction executed
+
+      l2_texture_read_throughput:  Memory read throughput seen at L2 cache for read requests from the texture cache
+
+             l2_l1_read_hit_rate:  Hit rate at L2 cache for all read requests from L1 cache
+
+        l2_texture_read_hit_rate:  Hit rate at L2 cache for all read requests from texture cache
+
+           l2_l1_read_throughput:  Memory read throughput seen at L2 cache for read requests from L1 cache
+
+           local_memory_overhead:  Ratio of local memory traffic to total memory traffic between the L1 and L2 caches
+
+                      issued_ipc:  Instructions issued per cycle
+
+          issue_slot_utilization:  Percentage of issue slots that issued at least one instruction, averaged across all cycles
+
+        sysmem_read_transactions:  Number of system memory read transactions
+
+       sysmem_write_transactions:  Number of system memory write transactions
+
+            l2_read_transactions:  Memory read transactions seen at L2 cache for all read requests
+
+           l2_write_transactions:  Memory write transactions seen at L2 cache for all write requests
+
+          tex_cache_transactions:  Texture cache read transactions
+
+          dram_read_transactions:  Device memory read transactions
+
+         dram_write_transactions:  Device memory write transactions
+
+              l2_read_throughput:  Memory read throughput seen at L2 cache for all read requests
+
+             l2_write_throughput:  Memory write throughput seen at L2 cache for all write requests
+
+          sysmem_read_throughput:  System memory read throughput
+
+         sysmem_write_throughput:  System memory write throughput
+
+                       cf_issued:  Number of issued control-flow instructions
+
+                     cf_executed:  Number of executed control-flow instructions
+
+                     ldst_issued:  Number of issued load and store instructions
+
+                   ldst_executed:  Number of executed load and store instructions
+
+           l1_shared_utilization:  The utilization level of the L1/shared memory relative to peak utilization
+
+                  l2_utilization:  The utilization level of the L2 cache relative to the peak utilization
+
+                 tex_utilization:  The utilization level of the texture cache relative to the peak utilization
+
+                dram_utilization:  The utilization level of the device memory relative to the peak utilization
+
+              sysmem_utilization:  The utilization level of the system memory relative to the peak utilization
+
+             ldst_fu_utilization:  The utilization level of the multiprocessor function units that execute load and store instructions
+
+              alu_fu_utilization:  The utilization level of the multiprocessor function units that execute integer and floating-point arithmetic instructions
+
+               cf_fu_utilization:  The utilization level of the multiprocessor function units that execute control-flow instructions
+
+              tex_fu_utilization:  The utilization level of the multiprocessor function units that execute texture instructions
+
+                     inst_issued:  The number of instructions issued
+
+                     issue_slots:  The number of issue slots used
+
+Device 1 (Quadro NVS 290):
+               branch_efficiency:  Ratio of non-divergent branches to total branches
+
+                  gld_efficiency:  Ratio of requested global memory load throughput to required global memory load throughput
+
+                  gst_efficiency:  Ratio of requested global memory store throughput to required global memory store throughput
+
