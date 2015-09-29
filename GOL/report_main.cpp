@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
    * multiCellCuda(startingGrid, N, maxGen);
    */
 
-  // multiCellCudaNewGhost(startingGrid, N, maxGen);
+  multiCellCudaNewGhost(startingGrid, N, maxGen);
 
   multiCellCudaGhost(startingGrid, N, maxGen);
 

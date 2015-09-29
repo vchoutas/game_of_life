@@ -122,8 +122,8 @@ void multiCellCudaNewGhost(bool* startingGrid, int N, int maxGen)
 
   dim3 threadNum(16, 16);
   //imperfect division creates problems(we have to use if)
-  dim3 blocks(std::min(GhostN / (threadNum.x * CELLPERTHR) + 1, (unsigned int)MAXBLOCKS),
-      std::min(GhostN / (threadNum.y * CELLPERTHR) + 1, (unsigned int)MAXBLOCKS));
+  dim3 blocks(std::min((N  + (threadNum.x * CELLPERTHR) -1) / (threadNum.x * CELLPERTHR), (unsigned int)MAXBLOCKS),
+      std::min((N +(threadNum.y * CELLPERTHR) -1)/ (threadNum.y * CELLPERTHR) , (unsigned int)MAXBLOCKS));
 
   dim3 ghostMatThreads(16, 1);
   dim3 ghostGridRowsSize(N / ghostMatThreads.x + 1, 1);
