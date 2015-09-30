@@ -3,8 +3,6 @@
 
 namespace serial
 {
-  //Na to kanouem makro na teleiwnoume
-  //GIRD[y*(N)+x] is the the value at GRID(x,y)
   void createGhostCells(bool* Grid,int N)
   {
     for (int x = 1; x < N - 1; ++x)
@@ -116,7 +114,7 @@ namespace serial
 
     double serialExecTime = (double)((endTime.tv_usec - startTime.tv_usec)
         /1.0e6 + endTime.tv_sec - startTime.tv_sec);
-    std::cout << std::endl << prefix << "<" << serialExecTime << "> seconds" << std::endl;
+    std::cout << std::endl << prefix << "Execution Time is <" << serialExecTime << "> seconds" << std::endl;
     utilities::count(nextGameGrid, N, N, prefix);
 
     delete[] initialGameGrid;
@@ -147,10 +145,6 @@ namespace serial
     }
 
     utilities::generate_ghost_table(startingGrid, initialGameGrid, N);
-    //utilities::print(serialStartingGrid,N);
-    //utilities::print(serialStartingGhostGrid,N+2);
-    //serial::createGhostCells(initialGameGrid, N + 2);
-    //utilities::print(initialGameGrid, N + 2);
 
     struct timeval startTime, endTime;
     gettimeofday(&startTime, NULL);
