@@ -7,6 +7,7 @@
 #include "many_cuda.cuh"
 #define MAXBLOCKS 512
 #define CELLPERTHR 2
+#define MCLP 2
 
 void multiCellCuda(bool* startingGrid, int N, int maxGen)
 {
@@ -315,36 +316,35 @@ __global__ void multiGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid
   // A 2D array contaning the data that will be used to calculate
   // the next generation for the current iteration of the game.
 
-  size_t row = (blockIdx.y * blockDim.y + threadIdx.y) * CELLPERTHR + 1;
-  size_t col = (blockIdx.x * blockDim.x + threadIdx.x) * CELLPERTHR + 1;
+  size_t row = (blockIdx.y * blockDim.y + threadIdx.y) * CELLPERTHR ;
+  size_t col = (blockIdx.x * blockDim.x + threadIdx.x) * CELLPERTHR ;
 
   bool localGrid[CELLPERTHR + 2][CELLPERTHR + 2];
-  //size_t yLim = CELLPERTHR > N + 1 - row ? N + 1 - row: CELLPERTHR;
-  //size_t xLim = CELLPERTHR > N + 1 - col ? N + 1 - col: CELLPERTHR;
   for (size_t i = 0; i < CELLPERTHR + 2; i++)
   {
-    size_t y = (row + i - 1) * (N + 2);
+    size_t y = (row + i ) * (N + 2);
     for (size_t j = 0; j < CELLPERTHR + 2; j++)
     {
-      size_t x = col + j - 1;
+      size_t x = col + j;
       localGrid[i][j] = currentGrid[y + x];
     }
   }
-
+  if(col<N &&row<N){
   for (size_t i = 1; i < CELLPERTHR + 1; i++)
   {
-    size_t y = __umul24(row + i - 1, N + 2);
+    size_t y = __umul24(row + i , N + 2);
     for (size_t j = 1; j < CELLPERTHR + 1; j++)
     {
       int livingNeighbors = localGrid[i - 1][j - 1] + localGrid[i - 1][j]
         + localGrid[i - 1][j + 1] + localGrid[i][j - 1]
         + localGrid[i][j + 1] + localGrid[i + 1][j - 1] + localGrid[i + 1][j]
         + localGrid[i + 1][j + 1];
-      size_t x = col + j - 1;
+      size_t x = col + j ;
       nextGrid[y + x] = livingNeighbors == 3 ||
         (livingNeighbors == 2 && localGrid[i][j]) ? 1 : 0;
     }
   }
+}
   return;
 }
 

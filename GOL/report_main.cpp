@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
  *   simpleCudaPitch(startingGrid, N, maxGen);
  */
 
-  simpleCudaGhost(startingGrid, N, maxGen);
+
 
   /*
    * multiCellCuda(startingGrid, N, maxGen);
@@ -68,6 +68,8 @@ int main(int argc, char *argv[])
   // singleCellSharedMem(startingGrid, N, maxGen);
 
   multiCellSharedMem(startingGrid, N, maxGen);
+
+  simpleCudaGhost(startingGrid, N, maxGen);
 
   //multiCellSharedMemPitch(startingGrid, N, maxGen);
 
