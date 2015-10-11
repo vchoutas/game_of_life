@@ -27,3 +27,14 @@ CMakeCache.txt
 
 # Vim Swap Files
 .*.swp
+
+# Image Files
+*.png
+*.jp*g
+
+# Zip Files
+*.zip
+
+# Bencharming Results Files
+GOL/results/
+GOL/*.py
