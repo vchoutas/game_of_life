@@ -4,7 +4,7 @@ project(game_of_life)
 find_package(CUDA)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
-find_package(GLEW )
+find_package(GLEW REQUIRED)
 
 # Pass options to NVCC
 if (${CUDA_FOUND})
@@ -26,48 +26,50 @@ if(${OPENGL_FOUND})
     src/utilities.cpp)
   target_link_libraries(${PROJECT_NAME}_utils
     ${OPENGL_LIBRARIES})
-    
-  add_library(${PROJECT_NAME}_serial
-    src/serial.cpp)
-  
 
   if(${CUDA_FOUND})
-    cuda_add_library(${PROJECT_NAME}_simple_cuda_lib
-      src/simple_cuda_gol.cu)
-    target_link_libraries(${PROJECT_NAME}_simple_cuda_lib
+
+    cuda_add_library(${PROJECT_NAME}_kernels
+      src/cuda_kernels.cu)
+    target_link_libraries(${PROJECT_NAME}_kernels
+      ${PROJECT_NAME}_utils
+      )
+    cuda_add_library(${PROJECT_NAME}_cuda
+      src/game_of_life.cu)
+    target_link_libraries(${PROJECT_NAME}_cuda
+      ${PROJECT_NAME}_kernels
       ${PROJECT_NAME}_utils
       ${OPENGL_LIBRARIES}
-      ${GLUT_LIBRARY})
+      ${GLUT_LIBRARY}
+      ${GLEW_LIBRARY}
+      )
+
+
   endif()
 
-  add_library(${PROJECT_NAME}_serial_lib
-    src/game_of_life.cpp
-    )
-  target_link_libraries(${PROJECT_NAME}_serial_lib
-    ${PROJECT_NAME}_utils
-    ${PROJECT_NAME}_serial
-    ${OPENGL_LIBRARIES}
-    ${GLUT_LIBRARY}
-    ${GLEW_LIBRARY}
-    )
+  # add_library(${PROJECT_NAME}_serial_lib
+    # src/game_of_life.cpp
+    # )
+
+  # target_link_libraries(${PROJECT_NAME}_serial_lib
+    # ${PROJECT_NAME}_utils
+    # ${OPENGL_LIBRARIES}
+    # ${GLUT_LIBRARY}
+    # ${GLEW_LIBRARY}
+    # )
+
   if(${CUDA_FOUND})
     cuda_add_executable(${PROJECT_NAME}.exe
       src/cuda_main.cpp)
     target_link_libraries(${PROJECT_NAME}.exe
-      ${PROJECT_NAME}_serial_lib
-      ${PROJECT_NAME}_simple_cuda_lib)
-  else()
-    add_executable(${PROJECT_NAME}.exe
-      src/main.cpp)
-    target_link_libraries(${PROJECT_NAME}.exe
-      ${PROJECT_NAME}_serial_lib
-      )
-    add_executable(test.exe
-      src/test.cpp)
-    target_link_libraries(test.exe
-      ${PROJECT_NAME}_serial
-      )
+      ${PROJECT_NAME}_cuda)
   endif()
+
+  # add_executable(${PROJECT_NAME}_serial.exe
+    # src/main.cpp)
+  # target_link_libraries(${PROJECT_NAME}_serial.exe
+    # ${PROJECT_NAME}_serial_lib
+    # )
 
 endif()
 

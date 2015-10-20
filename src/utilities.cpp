@@ -32,7 +32,7 @@ namespace utilities
       }
     }
 
-    std::cout << "Number of non zerow elements: " << counter << std::endl;
+    std::cout << "Number of non zero elements: " << counter << std::endl;
     std::cout << "Percent: " << (float)counter / (float)(N*N) << std::endl;
   }
 

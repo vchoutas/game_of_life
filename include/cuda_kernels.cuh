@@ -1,21 +1,17 @@
-#ifndef UTILITIES_CUH
-#define UTILITIES_CUH
+#ifndef CUDA_KERNELS_CUH
+#define CUDA_KERNELS_CUH
 
-#include <string>
-#include <cstring>
-#include <cstdlib>
-#include <ctime>
-#include <cstdio>
-#include <iostream>
-
-#include <cuda.h>
-#include <cuda_runtime.h>
-
-#define THRESHOLD 0.3
-#define GENERATIONS 10
-
-#define SWAP(x, y) do {typeof(x) SWAP = x; x = y; y = SWAP; } while(0)
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#ifdef __APPLE__
+#  include <OpenGL/gl.h>
+#  include <OpenGL/glu.h>
+#  include <GLUT/glut.h>
+#else
+#  include <GL/glew.h>
+#  include <GL/freeglut.h>
+#  include <GL/gl.h>
+#  include <GL/glu.h>
+#  include <GL/glut.h>
+#endif
 
 #define toLinearIndex(i, j, stride) (((i) * (stride)) + (j))
 
@@ -30,8 +26,17 @@
     } \
   } while (0)
 
-namespace utilities
+namespace cuda_kernels
 {
+  __host__ __device__ int calcNeighbors(bool* currentGrid, int x, int left, int right, int center,
+      int up, int down);
+
+  __global__ void simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N,
+      GLubyte* colorArray);
+
+  __global__ void multiCellGhostGridLoop(bool* currentGrid, bool* nextGrid, int N,
+      GLubyte* colorArray);
+
   /**
    * @brief Updates the elements of the extra ghost rows.
    * @param grid[bool*] The square array that will be updated
@@ -59,17 +64,6 @@ namespace utilities
    */
   __global__ void updateGhostCorners(bool* grid, int N, int pitch);
 
-  void read_from_file(bool *X, std::string filename, size_t N);
-  bool readFile(bool *X, std::string filename, size_t N);
-  void generate_table(bool *X, size_t N);
-  void save_table(int *X, int N);
-  int count(bool* currGrid,int height,int width,
-      const std::string& prefix = std::string(""));
-  int countGhost(bool* currGrid,int height,int width,
-      const std::string& prefix = std::string(""));
-  void generate_ghost_table(bool* Grid, bool* GhostGrid, size_t N);
-  void print(bool* grid, size_t N);
+}  // namespace cuda_kernels
 
-} // namespace utilities
-
-#endif
+#endif  // CUDA_KERNELS_CUH

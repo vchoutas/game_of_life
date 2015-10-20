@@ -1,5 +1,4 @@
-#include "game_of_life.h"
-#include "simple_cuda_gol.cuh"
+#include "game_of_life.cuh"
 
 int main(int argc,char* argv[])
 {
@@ -12,8 +11,8 @@ int main(int argc,char* argv[])
   }
   glutInit(&argc, argv);
 
-  SimpleCudaGoL simpleCudaGame(argv[1]);
-  simpleCudaGame.play();
+  GameOfLife cudaGame(argv[1]);
+  cudaGame.play();
 
   return 0;
 }
