@@ -15,6 +15,10 @@
 
 #define toLinearIndex(i, j, stride) (((i) * (stride)) + (j))
 
+#define CELLS_PER_THREAD 2
+#define TILE_SIZE_X 16
+#define TILE_SIZE_Y 16
+
 #define cudaCheckErrors(msg) \
   do { \
     cudaError_t __err = cudaGetLastError(); \
@@ -28,13 +32,54 @@
 
 namespace cuda_kernels
 {
-  __host__ __device__ int calcNeighbors(bool* currentGrid, int x, int left, int right, int center,
-      int up, int down);
+  /**
+   * @brief Function used to calculate the number of neighbors of a cell
+   * @param currentGrid[bool*] The current Game of Life board.
+   * @param centerCol[int] The column of the current cell.
+   * @param leftCol[int] The column on the left of the current cell.
+   * @param rightCol[int] The column on the right of the current cell.
+   * @param centerRow[int] The row where the current cell is situated.
+   * @param topRow[int] The row above the current cell.
+   * @param bottomRow[int] The row below the current cell.
+   * @return int The number of living neighbors of the cell located in
+   *          x, y = centerCol, centerRow
+   */
+  __host__ __device__ int calcNeighbors(bool* currentGrid, int centerCol, int leftCol,
+      int rightCol, int centerRow, int topRow, int bottomRow);
 
+  /**
+   * @brief A simple CUDA kernel used to calculate the next iteration of the
+   * Game of Life.
+   * @param currentGrid[bool*] The current board.
+   * @param nextGrid[bool*] The board of the next generation of the game.
+   * @param N[int] The number of cells in each row.
+   * @param colorArray[GLubyte*] The array that contains the color of each cell.
+   * @return void
+   */
   __global__ void simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N,
       GLubyte* colorArray);
 
+  /**
+   * @brief A CUDA kernel that uses a 2D grid size loop to calculate the next
+   * generation of the Game of Life.
+   * @param currentGrid[bool*] The current board.
+   * @param nextGrid[bool*] The board of the next generation of the game.
+   * @param N[int] The number of cells in each row.
+   * @param colorArray[GLubyte*] The array that contains the color of each cell.
+   * @return void
+   */
   __global__ void multiCellGhostGridLoop(bool* currentGrid, bool* nextGrid, int N,
+      GLubyte* colorArray);
+
+  /**
+   * @brief A CUDA kernel that uses shared memory tiles to speed up the next gen computation.
+   * @param currentGrid[bool*] The current board.
+   * @param nextGrid[bool*] The board of the next generation of the game.
+   * @param N[int] The number of cells in each row.
+   * @param colorArray[GLubyte*] The array that contains the color of each cell.
+   * @return void
+   */
+  __global__ void sharedMemoryKernel(bool* currentGrid, bool* nextGrid, int N,
       GLubyte* colorArray);
 
   /**

@@ -2,14 +2,36 @@
 
 namespace cuda_kernels
 {
-  __host__ __device__ int calcNeighbors(bool* currentGrid, int x, int left, int right, int center,
-      int up, int down)
+  /**
+   * @brief Function used to calculate the number of neighbors of a cell
+   * @param currentGrid[bool*] The current Game of Life board.
+   * @param centerCol[int] The column of the current cell.
+   * @param leftCol[int] The column on the left of the current cell.
+   * @param rightCol[int] The column on the right of the current cell.
+   * @param centerRow[int] The row where the current cell is situated.
+   * @param topRow[int] The row above the current cell.
+   * @param bottomRow[int] The row below the current cell.
+   * @return int The number of living neighbors of the cell located in
+   *          x, y = centerCol, centerRow
+   */
+  __host__ __device__ int calcNeighbors(bool* currentGrid, int centerCol, int leftCol,
+      int rightCol, int centerRow, int topRow, int bottomRow)
   {
-    return currentGrid[left + up] + currentGrid[x + up]
-      + currentGrid[right + up] + currentGrid[left + center]
-      + currentGrid[right + center] + currentGrid[left + down]
-      + currentGrid[x + down] + currentGrid[right + down];
+    return currentGrid[leftCol + topRow] + currentGrid[centerCol + topRow]
+      + currentGrid[rightCol + topRow] + currentGrid[leftCol + centerRow]
+      + currentGrid[rightCol + centerRow] + currentGrid[leftCol + bottomRow]
+      + currentGrid[centerCol + bottomRow] + currentGrid[rightCol + bottomRow];
   }
+
+  /**
+   * @brief A simple CUDA kernel used to calculate the next iteration of the
+   * Game of Life.
+   * @param currentGrid[bool*] The current board.
+   * @param nextGrid[bool*] The board of the next generation of the game.
+   * @param N[int] The number of cells in each row.
+   * @param colorArray[GLubyte*] The array that contains the color of each cell.
+   * @return void
+   */
   __global__ void simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N,
       GLubyte* colorArray)
   {
@@ -58,6 +80,15 @@ namespace cuda_kernels
     return;
   }
 
+  /**
+   * @brief A CUDA kernel that uses a 2D grid size loop to calculate the next
+   * generation of the Game of Life.
+   * @param currentGrid[bool*] The current board.
+   * @param nextGrid[bool*] The board of the next generation of the game.
+   * @param N[int] The number of cells in each row.
+   * @param colorArray[GLubyte*] The array that contains the color of each cell.
+   * @return void
+   */
   __global__ void multiCellGhostGridLoop(bool* currentGrid, bool* nextGrid, int N,
       GLubyte* colorArray)
   {
@@ -108,6 +139,93 @@ namespace cuda_kernels
         }
       }
     }
+    return;
+  }
+
+  /**
+   * @brief A CUDA kernel that uses shared memory tiles to speed up the next gen computation.
+   * @param currentGrid[bool*] The current board.
+   * @param nextGrid[bool*] The board of the next generation of the game.
+   * @param N[int] The number of cells in each row.
+   * @param colorArray[GLubyte*] The array that contains the color of each cell.
+   * @return void
+   */
+  __global__ void sharedMemoryKernel(bool* currentGrid, bool* nextGrid, int N, GLubyte* colorArray)
+  {
+    size_t add1 = threadIdx.y / (TILE_SIZE_Y - 1);
+    size_t add2 = threadIdx.x / (TILE_SIZE_X - 1);
+
+    size_t row = (blockIdx.y * blockDim.y + threadIdx.y) * CELLS_PER_THREAD ;//These numbers refer to the currentGrid
+    size_t col = (blockIdx.x * blockDim.x + threadIdx.x) * CELLS_PER_THREAD ;//These numbers refer to the currentGrid
+
+    //size_t startX = blockIdx.x * blockDim.x ;
+    //size_t startY = blockIdx.y * blockDim.y ;
+
+    size_t Y = threadIdx.y * CELLS_PER_THREAD;
+    size_t X = threadIdx.x * CELLS_PER_THREAD;
+
+    __shared__ bool localGrid[TILE_SIZE_Y * CELLS_PER_THREAD + 2][TILE_SIZE_X * CELLS_PER_THREAD + 2];
+
+    //COPY THE INTERNAL PARTS
+    for (size_t i = 0; i < CELLS_PER_THREAD + 1; i++){
+
+      size_t y = (row + add1 + i ) * (N + 2);//The global grid has a N+2 edge
+      for (size_t j = 0; j < CELLS_PER_THREAD + 1; j++)
+
+      {
+        size_t x = col + j + add2;
+        localGrid[Y + add1 + i][X + add2 + j] = currentGrid[y + x];//WE add +1 in order to fill the center parts
+      }
+    }
+
+    __syncthreads();
+
+    int i,j;
+    for (size_t m = 1; m < CELLS_PER_THREAD + 1; m++)
+    {
+      i = Y + m;
+      size_t y = __umul24(row + m, N + 2);
+      for (size_t n = 1; n < CELLS_PER_THREAD + 1; n++)
+      {
+        j = X + n;
+        int livingNeighbors = localGrid[i - 1][j - 1] + localGrid[i - 1][j]
+          + localGrid[i - 1][j + 1] + localGrid[i][j - 1]
+          + localGrid[i][j + 1] + localGrid[i + 1][j - 1] + localGrid[i + 1][j]
+          + localGrid[i + 1][j + 1];
+
+        size_t x = col + n;
+
+        nextGrid[y + x] = livingNeighbors == 3 ||
+          (livingNeighbors == 2 && localGrid[i][j]) ? 1 : 0;
+
+        int index = y + x;
+        int colorIndex = 3 * ((row + m - 1) * N  + x - 1);
+        if (nextGrid[index] && !localGrid[i][j])
+        {
+          colorArray[colorIndex]  = 0;
+          colorArray[colorIndex + 1]  = 255;
+          // colorArray[colorIndex + 2]  = 0;
+        }
+        // If the cell was alive and died.
+        if (!nextGrid[index] && localGrid[i][j])
+        {
+          colorArray[colorIndex] = 255;
+          colorArray[colorIndex + 1] = 0;
+          // colorArray[colorIndex + 2] = 0;
+        }
+        else if(!nextGrid[index] && !localGrid[i][j])
+        {
+          colorArray[colorIndex] > 0 ? colorArray[colorIndex]-- : colorArray[colorIndex] = 0;
+        }
+
+        if (nextGrid[index])
+        {
+          colorArray[colorIndex + 2] >= 255 ? colorArray[colorIndex + 2] = 255:
+            colorArray[colorIndex + 2]++;
+        }
+      }
+    }
+
     return;
   }
 
