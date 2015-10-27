@@ -674,7 +674,6 @@ void GameOfLife::keyBoardCallBack(unsigned char key, int x, int y)
       ptr->gpuOn_ ^= 1;
       if (ptr->gpuOn_)
       {
-        std::cout << "Running Game of Life on GPU" << std::endl;
         // Copy all the necessary data for the game of life from the
         // CPU to the GPU device.
 
@@ -696,7 +695,6 @@ void GameOfLife::keyBoardCallBack(unsigned char key, int x, int y)
       }
       else
       {
-        std::cout << "Running Game of Life on CPU" << std::endl;
         // Copy all the data from the GPU back to the host's memory.
 
         // Copy the starting grid from the GPU to the main memory.

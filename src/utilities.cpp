@@ -3,9 +3,9 @@
 namespace utilities
 {
 
-  void read_from_file(bool *X, std::string filename, size_t N){
-
-    FILE *fp = fopen(filename.c_str(), "r+");
+  void read_from_file(bool* X, std::string filename, size_t N)
+  {
+    FILE* fp = fopen(filename.c_str(), "r+");
     if (fp == NULL)
     {
       std::cout << "Could not open file " << filename << std::endl;
@@ -13,7 +13,7 @@ namespace utilities
       std::exit(-1);
     }
 
-    int size = fread(X, sizeof(bool), N*N, fp);
+    int size = fread(X, sizeof(bool), N * N, fp);
 
     std::cout << "elements: " <<  size << std::endl;
 
