@@ -21,6 +21,10 @@
 #include <cuda_gl_interop.h>
 
 
+/**
+ * @class GameOfLife
+ * @brief Class used to set up and play the Game of Life.
+ */
 class GameOfLife
 {
   public:
@@ -32,11 +36,15 @@ class GameOfLife
 
     explicit GameOfLife(const std::string& fileName);
 
+    GameOfLife(int argc, char** argv);
+
     ~GameOfLife()
     {
       std::cout << "Destroying Game of Life Object!" << std::endl;
       releaseAllocatedMemory();
     }
+
+    void initGame(const std::string& fileName);
 
     void releaseAllocatedMemory()
     {
@@ -139,8 +147,8 @@ class GameOfLife
     static GLfloat zoomFactor;
     static GLfloat deltaX;
     static GLfloat deltaY;
-    static GLint windowWidth;
-    static GLint windowHeight;
+    GLint windowWidth_;
+    GLint windowHeight_;
 
     const GLfloat left ;
     const GLfloat right ;

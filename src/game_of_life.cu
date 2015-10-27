@@ -10,9 +10,38 @@
 GLfloat GameOfLife::zoomFactor = 1;
 GLfloat GameOfLife::deltaX = 0.0f;
 GLfloat GameOfLife::deltaY = 0.0f;
-GLint GameOfLife::windowWidth  = 800;
-GLint GameOfLife::windowHeight = 800 ;
 GameOfLife* GameOfLife::ptr = NULL;
+
+GameOfLife::GameOfLife(int argc, char** argv) :
+  windowWidth_(800), windowHeight_(800), left(-1.0f), right(1.0f), top(1.0f),
+  bottom(-1.0f), gpuOn_(true), gpuMethod_(1), cellPerThread_(4)
+{
+  if (argc < 2)
+  {
+    std::cout << "Usage : " << argv[0] << std::endl
+      << "\t configFileName The name of the configuration File"
+      << std::endl;
+    std::exit(-1);
+  }
+
+  // Initialize GLUT.
+  glutInit(&argc, argv);
+  for (int i = 0; i < argc; ++i)
+  {
+    std::string currentArg(argv[i]);
+    if (currentArg.compare("-h") == 0 || currentArg.compare("--help") == 0)
+    {
+      std::cout << "Usage : " << argv[0] << std::endl
+        << "\t configFileName The name of the configuration File"
+        << std::endl;
+      std::exit(0);
+    }
+  }
+
+  std::string inputFileName = std::string(argv[1]);
+
+  initGame(inputFileName);
+}
 
 /**
  * @brief Constructor that takes as input the path to the
@@ -21,8 +50,13 @@ GameOfLife* GameOfLife::ptr = NULL;
  * configuration file.
  */
 GameOfLife::GameOfLife(const std::string& fileName):
-  left(-1.0f), right(1.0f), top(1.0f), bottom(-1.0f), gpuOn_(true),
-  cellPerThread_(4)
+  windowWidth_(800), windowHeight_(800), left(-1.0f), right(1.0f), top(1.0f),
+  bottom(-1.0f), gpuOn_(true), cellPerThread_(4)
+{
+  initGame(fileName);
+}
+
+void GameOfLife::initGame(const std::string& fileName)
 {
   bool parseFlag = parseConfigFile(fileName);
   if (!parseFlag)
@@ -155,12 +189,12 @@ bool GameOfLife::createGhostArray()
 
 
 /**
- * @brief Initialize all the functions used for displaying the grid.
+ * @brief Initialize all the OpenGL components that are used to display the grid.
  */
 bool GameOfLife::setupOpenGL(void)
 {
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-  glutInitWindowSize(windowWidth , windowHeight);
+  glutInitWindowSize(windowWidth_, windowHeight_);
   glutInitWindowPosition(0, 0);
   windowId_ = glutCreateWindow("Game of Life");
 
@@ -246,14 +280,14 @@ bool GameOfLife::textureSetup(void)
 
 void GameOfLife::reshape(int w, int h)
 {
-  windowWidth = w;
-  windowHeight = h;
+  ptr->windowWidth_ = w;
+  ptr->windowHeight_ = h;
 
-  glViewport(0, 0, windowWidth, windowHeight);
+  glViewport(0, 0, ptr->windowWidth_, ptr->windowHeight_);
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(0.f, windowWidth , windowHeight, 0.f, -1.f , 1.f);
+  glOrtho(0.f, ptr->windowWidth_, ptr->windowHeight_, 0.f, -1.f , 1.f);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
@@ -499,24 +533,26 @@ void GameOfLife::displayCallback()
   GLint height = ptr->height_;
 
 
-  glMatrixMode(GL_TEXTURE);
-  // glMatrixMode(GL_PROJECTION);
+  glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  glTranslatef(deltaX, deltaY, 0.0f);
-  // glScalef(xSize, ySize, 1.0f);
 
   glMatrixMode(GL_MODELVIEW);
-
   // Load the identity transformation matrix.
   glLoadIdentity();
 
   // Define the scale transformation so as to properly view the grid.
   glScalef(xSize, ySize, 1.0f);
+
   // Apply a translation transformation so as to place the center of the grid
   // on the center of the window and move it when the user moves it using the
   // keyboard arrow keys.
   glTranslatef(-width / 2.0f, height / 2.0f, 0.0f);
+
+  glMatrixMode(GL_TEXTURE);
+  glLoadIdentity();
+  glTranslatef(deltaX, deltaY, 0.0f);
+
 
   glBindTexture(GL_TEXTURE_2D, ptr->gl_texturePtr);
 
@@ -575,7 +611,22 @@ void GameOfLife::drawGameInfo()
 
   std::string activeDeviceType("Active Device: ");
   if (gpuOn_)
+  {
     activeDeviceType += std::string("GPU");
+    switch (gpuMethod_)
+    {
+      case 1:
+        activeDeviceType += std::string(" Single Cell / Thread Kernel");
+        break;
+      case 2:
+        activeDeviceType += std::string(" Grid Size Loop Kernel");
+        break;
+      case 3:
+        activeDeviceType += std::string(" Shared Memory Kernel");
+        break;
+    }
+  }
+
   else
     activeDeviceType += std::string("CPU");
 
@@ -858,7 +909,16 @@ void GameOfLife::getNextGenDevice(bool* currentGridDevice, bool* nextGridDevice,
 
       break;
     case 3:
-      std::cout << "Multiple Cells on Shared Memory" << std::endl;
+      threadNum = dim3(TILE_SIZE_X, TILE_SIZE_Y);
+      blocks = dim3((width_  + (threadNum.x * CELLS_PER_THREAD) - 1) / (threadNum.x * CELLS_PER_THREAD),
+          (width_ +(threadNum.y * CELLS_PER_THREAD) - 1)/ (threadNum.y * CELLS_PER_THREAD));
+      cuda_kernels::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice, ghostCellNum_,
+          ghostCellNum_);
+      cuda_kernels::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice,
+          ghostCellNum_, ghostCellNum_);
+      cuda_kernels::updateGhostCorners<<< 1, 1 >>>(currentGridDevice, ghostCellNum_, ghostCellNum_);
+      cuda_kernels::sharedMemoryKernel<<<blocks, threadNum>>>(currentGridDevice,
+          nextGridDevice, width_, colorArrayDevice_);
       break;
   }
 

@@ -43,7 +43,7 @@ target_link_libraries(${PROJECT_NAME}_cuda
 
 
 cuda_add_executable(${PROJECT_NAME}.exe
-  src/cuda_main.cpp)
+  src/main.cpp)
 target_link_libraries(${PROJECT_NAME}.exe
   ${PROJECT_NAME}_cuda)
 
