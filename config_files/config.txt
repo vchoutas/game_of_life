@@ -1,0 +1,21 @@
+# Grid Width
+width 4000
+# Grid Height
+height 4000
+
+# Input board file Name
+boardFileName random
+
+# Display Flag. Set to true if you want to open a window
+# to view the Game of Life.
+display true
+
+# The maximum number of generations for the game.
+generationNumber 100000000
+
+# Output File to write the grid for the final generation
+outputFile output.bin
+
+gpuEnabled true
+
+cellsPerThread 4
