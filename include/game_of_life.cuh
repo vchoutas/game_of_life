@@ -66,6 +66,10 @@ class GameOfLife
 
     void play();
 
+    void printHelpMessage(const std::string& executableName);
+
+    void printInstructions();
+
     static void displayCallback(void);
     static void reshape(int w, int h);
 

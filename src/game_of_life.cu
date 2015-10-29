@@ -17,30 +17,49 @@ GameOfLife::GameOfLife(int argc, char** argv) :
   bottom(-1.0f), gpuOn_(true), gpuMethod_(1), cellPerThread_(4)
 {
   if (argc < 2)
-  {
-    std::cout << "Usage : " << argv[0] << std::endl
-      << "\t configFileName The name of the configuration File"
-      << std::endl;
-    std::exit(-1);
-  }
+    printHelpMessage(argv[0]);
 
   // Initialize GLUT.
-  glutInit(&argc, argv);
   for (int i = 0; i < argc; ++i)
   {
     std::string currentArg(argv[i]);
     if (currentArg.compare("-h") == 0 || currentArg.compare("--help") == 0)
-    {
-      std::cout << "Usage : " << argv[0] << std::endl
-        << "\t configFileName The name of the configuration File"
-        << std::endl;
-      std::exit(0);
-    }
+      printHelpMessage(argv[0]);
   }
 
+
+  glutInit(&argc, argv);
   std::string inputFileName = std::string(argv[1]);
 
   initGame(inputFileName);
+}
+
+void GameOfLife::printHelpMessage(const std::string& executableName)
+{
+  std::cout << "Usage : " << executableName << std::endl
+    << "\t configFileName The name of the configuration File"
+    << std::endl;
+  std::exit(-1);
+}
+
+void GameOfLife::printInstructions()
+{
+  // TO DO
+  std::cout << "Starting GLUT main loop..." << std::endl << std::endl;
+  std::cout << "Press [t] to toggle between GPU and CPU implementations" << std::endl;
+  std::cout << "Press [r] to reset the view to the original" << std::endl;
+  std::cout << "Press [q] or [ESC] to exit" << std::endl;
+  std::cout << "Press the [+] key to zoom in" << std::endl;
+  std::cout << "Press the [-] key to zoom out" << std::endl;
+  std::cout << "Press the [up arrow] to move up" << std::endl;
+  std::cout << "Press the [down arrow] to move down" << std::endl;
+  std::cout << "Press the [left arrow] to move left" << std::endl;
+  std::cout << "Press the [right arrow] to move right" << std::endl;
+  std::cout << "When running on the GPU:" << std::endl;
+  std::cout << "\t-Press [1] to use the Single Cell per Thread Kernel" << std::endl;
+  std::cout << "\t-Press [2] to use the Multi Cell per Thread Grid Sized Loop Kernel" << std::endl;
+  std::cout << "\t-Press [3] to use the Shared Memory Kernel" << std::endl;
+
 }
 
 /**
@@ -437,6 +456,7 @@ void GameOfLife::play(void)
     frameCounter_ = 0;
     fps_ = 0;
 
+    printInstructions();
     glutMainLoop();
   }
 
@@ -723,7 +743,9 @@ void GameOfLife::keyBoardCallBack(unsigned char key, int x, int y)
     case '3':
       ptr->gpuMethod_ = 3;
       break;
-    // If the Escape key was pressed then free the allocated resources and std::exit.
+    // If the Escape or the Q key was pressed then free the allocated resources and std::exit.
+    case 'q':
+    case 'Q':
     case char(27):
       ptr->terminate();
       break;
