@@ -53,11 +53,9 @@ namespace cuda_kernels
    * @param currentGrid[bool*] The current board.
    * @param nextGrid[bool*] The board of the next generation of the game.
    * @param N[int] The number of cells in each row.
-   * @param colorArray[GLubyte*] The array that contains the color of each cell.
    * @return void
    */
-  __global__ void simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N,
-      GLubyte* colorArray);
+  __global__ void simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N);
 
   /**
    * @brief A CUDA kernel that uses a 2D grid size loop to calculate the next
@@ -65,22 +63,21 @@ namespace cuda_kernels
    * @param currentGrid[bool*] The current board.
    * @param nextGrid[bool*] The board of the next generation of the game.
    * @param N[int] The number of cells in each row.
-   * @param colorArray[GLubyte*] The array that contains the color of each cell.
    * @return void
    */
-  __global__ void multiCellGhostGridLoop(bool* currentGrid, bool* nextGrid, int N,
-      GLubyte* colorArray);
+  __global__ void multiCellGhostGridLoop(bool* currentGrid, bool* nextGrid, int N);
 
   /**
    * @brief A CUDA kernel that uses shared memory tiles to speed up the next gen computation.
    * @param currentGrid[bool*] The current board.
    * @param nextGrid[bool*] The board of the next generation of the game.
    * @param N[int] The number of cells in each row.
-   * @param colorArray[GLubyte*] The array that contains the color of each cell.
    * @return void
    */
-  __global__ void sharedMemoryKernel(bool* currentGrid, bool* nextGrid, int N,
-      GLubyte* colorArray);
+  __global__ void sharedMemoryKernel(bool* currentGrid, bool* nextGrid, int N);
+
+
+  __global__ void updateColorArray(GLubyte* colorArray, bool* currentGrid, bool* nextGrid, int N);
 
   /**
    * @brief Updates the elements of the extra ghost rows.

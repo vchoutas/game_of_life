@@ -29,11 +29,9 @@ namespace cuda_kernels
    * @param currentGrid[bool*] The current board.
    * @param nextGrid[bool*] The board of the next generation of the game.
    * @param N[int] The number of cells in each row.
-   * @param colorArray[GLubyte*] The array that contains the color of each cell.
    * @return void
    */
-  __global__ void simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N,
-      GLubyte* colorArray)
+  __global__ void simpleGhostNextGenerationKernel(bool* currentGrid, bool* nextGrid, int N)
   {
     int col = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int row = blockIdx.y * blockDim.y + threadIdx.y + 1;
@@ -50,32 +48,6 @@ namespace cuda_kernels
       int livingNeighbors = calcNeighbors(currentGrid, col, left, right, center, up, down);
       nextGrid[index] = livingNeighbors == 3 ||
         (livingNeighbors == 2 && currentGrid[index]) ? 1 : 0;
-
-      int colorIndex = 3 * ((row - 1) * N + col - 1);
-      if (nextGrid[index] && !currentGrid[index])
-      {
-        colorArray[colorIndex]  = 0;
-        colorArray[colorIndex + 1]  = 255;
-        // colorArray[colorIndex + 2]  = 0;
-      }
-      // If the cell was alive and died.
-      if (!nextGrid[index] && currentGrid[index])
-      {
-        colorArray[colorIndex] = 255;
-        colorArray[colorIndex + 1] = 0;
-        // colorArray[colorIndex + 2] = 0;
-      }
-      else if(!nextGrid[index] && !currentGrid[index])
-      {
-        colorArray[colorIndex] > 0 ? colorArray[colorIndex]-- : colorArray[colorIndex] = 0;
-      }
-
-      if (nextGrid[index])
-      {
-        colorArray[colorIndex + 2] >= 255 ? colorArray[colorIndex + 2] = 255:
-          colorArray[colorIndex + 2]++;
-      }
-
     }
     return;
   }
@@ -86,11 +58,9 @@ namespace cuda_kernels
    * @param currentGrid[bool*] The current board.
    * @param nextGrid[bool*] The board of the next generation of the game.
    * @param N[int] The number of cells in each row.
-   * @param colorArray[GLubyte*] The array that contains the color of each cell.
    * @return void
    */
-  __global__ void multiCellGhostGridLoop(bool* currentGrid, bool* nextGrid, int N,
-      GLubyte* colorArray)
+  __global__ void multiCellGhostGridLoop(bool* currentGrid, bool* nextGrid, int N)
   {
     int xIndex = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int yIndex = blockIdx.y * blockDim.y + threadIdx.y + 1;
@@ -112,31 +82,6 @@ namespace cuda_kernels
         int livingNeighbors = calcNeighbors(currentGrid, j, left, right, y, up, down);
         nextGrid[index] = livingNeighbors == 3 ||
           (livingNeighbors == 2 && currentGrid[index]) ? 1 : 0;
-
-        int colorIndex = 3 * ((i - 1) * N  + j - 1);
-        if (nextGrid[index] && !currentGrid[index])
-        {
-          colorArray[colorIndex]  = 0;
-          colorArray[colorIndex + 1]  = 255;
-          // colorArray[colorIndex + 2]  = 0;
-        }
-        // If the cell was alive and died.
-        if (!nextGrid[index] && currentGrid[index])
-        {
-          colorArray[colorIndex] = 255;
-          colorArray[colorIndex + 1] = 0;
-          // colorArray[colorIndex + 2] = 0;
-        }
-        else if(!nextGrid[index] && !currentGrid[index])
-        {
-          colorArray[colorIndex] > 0 ? colorArray[colorIndex]-- : colorArray[colorIndex] = 0;
-        }
-
-        if (nextGrid[index])
-        {
-          colorArray[colorIndex + 2] >= 255 ? colorArray[colorIndex + 2] = 255:
-            colorArray[colorIndex + 2]++;
-        }
       }
     }
     return;
@@ -147,19 +92,15 @@ namespace cuda_kernels
    * @param currentGrid[bool*] The current board.
    * @param nextGrid[bool*] The board of the next generation of the game.
    * @param N[int] The number of cells in each row.
-   * @param colorArray[GLubyte*] The array that contains the color of each cell.
    * @return void
    */
-  __global__ void sharedMemoryKernel(bool* currentGrid, bool* nextGrid, int N, GLubyte* colorArray)
+  __global__ void sharedMemoryKernel(bool* currentGrid, bool* nextGrid, int N)
   {
-    size_t add1 = threadIdx.y / (TILE_SIZE_Y - 1);
-    size_t add2 = threadIdx.x / (TILE_SIZE_X - 1);
+    size_t verticalOffset = threadIdx.y / (TILE_SIZE_Y - 1);
+    size_t horOffset = threadIdx.x / (TILE_SIZE_X - 1);
 
     size_t row = (blockIdx.y * blockDim.y + threadIdx.y) * CELLS_PER_THREAD ;//These numbers refer to the currentGrid
     size_t col = (blockIdx.x * blockDim.x + threadIdx.x) * CELLS_PER_THREAD ;//These numbers refer to the currentGrid
-
-    //size_t startX = blockIdx.x * blockDim.x ;
-    //size_t startY = blockIdx.y * blockDim.y ;
 
     size_t Y = threadIdx.y * CELLS_PER_THREAD;
     size_t X = threadIdx.x * CELLS_PER_THREAD;
@@ -169,12 +110,11 @@ namespace cuda_kernels
     //COPY THE INTERNAL PARTS
     for (size_t i = 0; i < CELLS_PER_THREAD + 1; i++){
 
-      size_t y = (row + add1 + i ) * (N + 2);//The global grid has a N+2 edge
+      size_t y = (row + verticalOffset + i ) * (N + 2);//The global grid has a N+2 edge
       for (size_t j = 0; j < CELLS_PER_THREAD + 1; j++)
-
       {
-        size_t x = col + j + add2;
-        localGrid[Y + add1 + i][X + add2 + j] = currentGrid[y + x];//WE add +1 in order to fill the center parts
+        size_t x = col + j + horOffset;
+        localGrid[Y + verticalOffset + i][X + horOffset + j] = currentGrid[y + x];//WE add +1 in order to fill the center parts
       }
     }
 
@@ -195,25 +135,45 @@ namespace cuda_kernels
 
         size_t x = col + n;
 
+        if (row < N + 1 && col < N + 1)
         nextGrid[y + x] = livingNeighbors == 3 ||
           (livingNeighbors == 2 && localGrid[i][j]) ? 1 : 0;
+      }
+    }
 
-        int index = y + x;
-        int colorIndex = 3 * ((row + m - 1) * N  + x - 1);
-        if (nextGrid[index] && !localGrid[i][j])
+    return;
+  }
+
+  __global__ void updateColorArray(GLubyte* colorArray, bool* currentGrid, bool* nextGrid, int N)
+  {
+    int xIndex = blockIdx.x * blockDim.x + threadIdx.x + 1;
+    int yIndex = blockIdx.y * blockDim.y + threadIdx.y + 1;
+    int xStride = blockDim.x * gridDim.x;
+    int yStride = blockDim.y * gridDim.y;
+
+    for (int i = yIndex; i < N + 1; i += yStride)
+    {
+      size_t y = __umul24(i, N + 2);
+      size_t up = __umul24(i - 1, N + 2);
+      size_t down = __umul24(i + 1, N + 2);
+      for (int j = xIndex; j < N + 1; j += xStride)
+      {
+        int index = y + j;
+
+        // Calculate the index for the color array for the current cell.
+        int colorIndex = 3 * ((i - 1) * N  + j - 1);
+        if (nextGrid[index] && !currentGrid[index])
         {
           colorArray[colorIndex]  = 0;
           colorArray[colorIndex + 1]  = 255;
-          // colorArray[colorIndex + 2]  = 0;
         }
         // If the cell was alive and died.
-        if (!nextGrid[index] && localGrid[i][j])
+        if (!nextGrid[index] && currentGrid[index])
         {
           colorArray[colorIndex] = 255;
           colorArray[colorIndex + 1] = 0;
-          // colorArray[colorIndex + 2] = 0;
         }
-        else if(!nextGrid[index] && !localGrid[i][j])
+        else if(!nextGrid[index] && !currentGrid[index])
         {
           colorArray[colorIndex] > 0 ? colorArray[colorIndex]-- : colorArray[colorIndex] = 0;
         }
@@ -225,8 +185,6 @@ namespace cuda_kernels
         }
       }
     }
-
-    return;
   }
 
   /**
@@ -278,5 +236,6 @@ namespace cuda_kernels
     grid[toLinearIndex(0, N - 1, pitch)] = grid[toLinearIndex(N - 2, 1, pitch)];//(0,N-1)-->(N-2,1)
     grid[toLinearIndex(N - 1, 0, pitch)] = grid[toLinearIndex(1, N - 2, pitch)];//(N-1,0)-->(1,N-2)
   }
+
 
 }  // namespace cuda_kernels
