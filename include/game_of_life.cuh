@@ -19,6 +19,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
+#include <iomanip>
 
 
 /**
@@ -82,7 +83,7 @@ class GameOfLife
         int up, int down);
     void getNextGeneration(bool* currGrid,bool* nextGrid,int height,int width);
 
-    void getNextGenDevice(bool* currGrid,bool* nextGrid,int height,int width);
+    void getNextGenDevice();
 
     void updateGhostCells();
     void updateColors(int x, int y);
@@ -144,7 +145,8 @@ class GameOfLife
     int cellPerThread_;
 
     int frameCounter_;
-    double fps_;
+    double avgDrawTime_;
+    double timeCounter_;
 
     struct timeval startTime, endTime;
 

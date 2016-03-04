@@ -9,7 +9,6 @@ find_package(GLEW REQUIRED)
 # Pass options to NVCC
 set(CUDA_NVCC_FLAGS "-arch=sm_20")
 
-
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 include_directories(
@@ -40,14 +39,7 @@ target_link_libraries(${PROJECT_NAME}_cuda
   ${GLEW_LIBRARY}
   )
 
-
-
 cuda_add_executable(${PROJECT_NAME}.exe
   src/main.cpp)
 target_link_libraries(${PROJECT_NAME}.exe
   ${PROJECT_NAME}_cuda)
-
-
-
-
-

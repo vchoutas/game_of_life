@@ -444,17 +444,14 @@ void GameOfLife::play(void)
       genCnt_++;
       std::swap(currentGrid_,nextGrid_);
     }
-    gettimeofday(&endTime, NULL);
-    double execTime = (double)((endTime.tv_usec - startTime.tv_usec)
-        /1.0e6 + endTime.tv_sec - startTime.tv_sec);
-    std::cout << "Execution Time is = " << execTime << std::endl;
   }
   else
   {
     genCnt_ = 0;
     gettimeofday(&startTime, NULL);
     frameCounter_ = 0;
-    fps_ = 0;
+    timeCounter_ = 0;
+    avgDrawTime_ = 0;
 
     printInstructions();
     glutMainLoop();
@@ -518,23 +515,19 @@ void GameOfLife::updateColors(int x, int y)
   if (nextGrid_[index] && !currentGrid_[index])
   {
     colorArray_[colorIndex]  = 0;
-    colorArray_[colorIndex + 1]  = 128;
-    // colorArray_[colorIndex + 2]  = 0;
+    colorArray_[colorIndex + 1]  = 255;
   }
   // If the cell was alive and died.
   if (!nextGrid_[index] && currentGrid_[index])
   {
-    colorArray_[colorIndex] = 200;
+    colorArray_[colorIndex] = 255;
     colorArray_[colorIndex + 1] = 0;
-    // colorArray_[colorIndex + 2] = 0;
   }
   else
     colorArray_[colorIndex] > 0 ? colorArray_[colorIndex]-- : colorArray_[colorIndex] = 0;
 
   // If the cell remains alive.
   if (nextGrid_[index])
-    // colorArray_[colorIndex + 1] >= 255 ? colorArray_[colorIndex + 1] = 255:
-      // colorArray_[colorIndex + 1]++;
     colorArray_[colorIndex + 2] >= 255 ? colorArray_[colorIndex + 2] = 255:
       colorArray_[colorIndex + 2]++;
 
@@ -616,15 +609,14 @@ void GameOfLife::drawGameInfo()
   double elapsedTime = (double)((endTime.tv_usec - startTime.tv_usec)
         /1.0e6 + endTime.tv_sec - startTime.tv_sec);
 
+  timeCounter_ += elapsedTime;
+  startTime = endTime;
+
   // If a second has passed since the last call.
-  if (elapsedTime > 1.0)
-  {
-    // Calculate the number of frames per second.
-    fps_ = frameCounter_ / elapsedTime;
-    // gettimeofday(&startTime, NULL);
-    startTime = endTime;
-    frameCounter_ = 0;
-  }
+  // if (frameCounter_  < 10)
+    // return;
+  // Calculate the number of frames per second.
+
 
   glColor3f(1.0f, 1.0f, 1.0f);
   glRasterPos2f(0, - 1.0f * height_ / 8.0f);
@@ -656,19 +648,27 @@ void GameOfLife::drawGameInfo()
 
   // Draw the frames per second on the screen.
   std::stringstream ss;
-  ss << "FPS: " << fps_;
+  ss << std::setprecision(4) << "Avg Frame Draw Time: " << avgDrawTime_ << " seconds.";
 
-  std::string fpsString(ss.str());
+  std::string timeString(ss.str());
 
   glColor3f(1.0f, 1.0f, 1.0f);
   glRasterPos2f(0, - 3.0f * height_ / 16.0f);
-  for (int i = 0; i < fpsString.size(); ++i) {
-    glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, (int)fpsString[i]);
+  for (int i = 0; i < timeString.size(); ++i) {
+    glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, (int)timeString[i]);
   }
 
   glPopMatrix();
 
   glColor3f(1.0f, 1.0f, 1.0f);
+
+  if (frameCounter_ > 10)
+  {
+    avgDrawTime_ = timeCounter_ / frameCounter_;
+    timeCounter_ = 0;
+    frameCounter_ = 0;
+  }
+
   return;
 }
 
@@ -780,10 +780,6 @@ void GameOfLife::arrowKeyCallback(int key, int x, int y)
 
 void GameOfLife::terminate()
 {
-  gettimeofday(&endTime, NULL);
-  double execTime = (double)((endTime.tv_usec - startTime.tv_usec)
-      /1.0e6 + endTime.tv_sec - startTime.tv_sec);
-  std::cout << "Execution Time is = " << execTime << std::endl;
   std::cout << "Terminating Game of Life!" << std::endl;
 
   cudaDeviceReset();
@@ -815,10 +811,12 @@ void GameOfLife::gameLoopCallback()
   }
   else
   {
-    ptr->getNextGenDevice(ptr->currentGridDevice_, ptr->nextGridDevice_, ptr->height_, ptr->width_);
+    ptr->getNextGenDevice();
     std::swap(ptr->currentGridDevice_, ptr->nextGridDevice_);
   }
   ptr->genCnt_++;
+
+  // std::cin.ignore();
 
   glutPostRedisplay();
   return;
@@ -884,10 +882,15 @@ void GameOfLife::getNextGeneration(bool* currGrid, bool* nextGrid, int height, i
   return;
 }
 
-void GameOfLife::getNextGenDevice(bool* currentGridDevice, bool* nextGridDevice, int height, int width)
+void GameOfLife::getNextGenDevice()
 {
   dim3 threadNum(16, 16);
   dim3 blocks;
+
+  dim3 colorThreadNum(16, 16);
+  dim3 colorBlocks = dim3(width_ / (threadNum.x * cellPerThread_) + 1,
+          height_ / (threadNum.y * cellPerThread_) + 1);
+
   dim3 ghostMatThreads(16, 1);
   dim3 ghostGridRowsSize(width_ / ghostMatThreads.x + 1, 1);
   dim3 ghostGridColSize(height_ / ghostMatThreads.x + 1, 1);
@@ -905,42 +908,47 @@ void GameOfLife::getNextGenDevice(bool* currentGridDevice, bool* nextGridDevice,
       // Copy the Contents of the current and the next grid
       blocks = dim3(width_ / threadNum.x + 1, height_ / threadNum.y + 1);
 
-      cuda_kernels::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice, ghostCellNum_,
+      cuda_kernels::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice_, ghostCellNum_,
           ghostCellNum_);
-      cuda_kernels::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice,
+      cuda_kernels::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice_,
           ghostCellNum_, ghostCellNum_);
-      cuda_kernels::updateGhostCorners<<< 1, 1 >>>(currentGridDevice, ghostCellNum_,
+      cuda_kernels::updateGhostCorners<<< 1, 1 >>>(currentGridDevice_, ghostCellNum_,
           ghostCellNum_);
-      cuda_kernels::simpleGhostNextGenerationKernel<<<blocks, threadNum>>>(currentGridDevice, nextGridDevice,
-          width_, colorArrayDevice_);
+      cuda_kernels::simpleGhostNextGenerationKernel<<<blocks, threadNum>>>(currentGridDevice_, nextGridDevice_,
+          width_);
+
       break;
 
     case 2:
       blocks = dim3(width_ / (threadNum.x * cellPerThread_) + 1,
           height_ / (threadNum.y * cellPerThread_) + 1);
 
-      cuda_kernels::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice, ghostCellNum_,
+      cuda_kernels::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice_, ghostCellNum_,
           ghostCellNum_);
-      cuda_kernels::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice,
+      cuda_kernels::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice_,
           ghostCellNum_, ghostCellNum_);
-      cuda_kernels::updateGhostCorners<<< 1, 1 >>>(currentGridDevice, ghostCellNum_, ghostCellNum_);
-      cuda_kernels::multiCellGhostGridLoop<<<blocks, threadNum>>>(currentGridDevice,
-          nextGridDevice, width_, colorArrayDevice_);
+      cuda_kernels::updateGhostCorners<<< 1, 1 >>>(currentGridDevice_, ghostCellNum_, ghostCellNum_);
+      cuda_kernels::multiCellGhostGridLoop<<<blocks, threadNum>>>(currentGridDevice_,
+          nextGridDevice_, width_);
 
       break;
     case 3:
       threadNum = dim3(TILE_SIZE_X, TILE_SIZE_Y);
       blocks = dim3((width_  + (threadNum.x * CELLS_PER_THREAD) - 1) / (threadNum.x * CELLS_PER_THREAD),
           (width_ +(threadNum.y * CELLS_PER_THREAD) - 1)/ (threadNum.y * CELLS_PER_THREAD));
-      cuda_kernels::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice, ghostCellNum_,
+
+      cuda_kernels::updateGhostRows<<< ghostGridRowsSize, ghostMatThreads>>>(currentGridDevice_, ghostCellNum_,
           ghostCellNum_);
-      cuda_kernels::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice,
+      cuda_kernels::updateGhostCols<<< ghostGridColSize, ghostMatThreads>>>(currentGridDevice_,
           ghostCellNum_, ghostCellNum_);
-      cuda_kernels::updateGhostCorners<<< 1, 1 >>>(currentGridDevice, ghostCellNum_, ghostCellNum_);
-      cuda_kernels::sharedMemoryKernel<<<blocks, threadNum>>>(currentGridDevice,
-          nextGridDevice, width_, colorArrayDevice_);
+      cuda_kernels::updateGhostCorners<<< 1, 1 >>>(currentGridDevice_, ghostCellNum_, ghostCellNum_);
+      cuda_kernels::sharedMemoryKernel<<<blocks, threadNum>>>(currentGridDevice_,
+          nextGridDevice_, width_);
+
       break;
   }
+  cuda_kernels::updateColorArray<<<colorBlocks, colorThreadNum>>>(colorArrayDevice_,
+      currentGridDevice_, nextGridDevice_, width_);
 
   cudaGraphicsUnmapResources(1, &cudaPboResource_, 0);
   cudaStreamSynchronize(0);
