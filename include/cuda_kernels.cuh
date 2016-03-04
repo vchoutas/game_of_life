@@ -3,14 +3,8 @@
 
 #ifdef __APPLE__
 #  include <OpenGL/gl.h>
-#  include <OpenGL/glu.h>
-#  include <GLUT/glut.h>
 #else
-#  include <GL/glew.h>
-#  include <GL/freeglut.h>
 #  include <GL/gl.h>
-#  include <GL/glu.h>
-#  include <GL/glut.h>
 #endif
 
 #define toLinearIndex(i, j, stride) (((i) * (stride)) + (j))

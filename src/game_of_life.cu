@@ -219,12 +219,6 @@ bool GameOfLife::setupOpenGL(void)
 
   glewInit();
 
-  /* if (!glewIsSupported("GL_VERSION_2_0")) */
-  /* { */
-    /* std::cerr << "ERROR: Support for necessary OpenGL extensions missing." << std::endl; */
-    /* std::exit(-1); */
-  /* } */
-
   glutReportErrors();
 
   glClearColor(0, 0, 0, 0);
