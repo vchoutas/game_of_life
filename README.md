@@ -16,8 +16,8 @@ The rules of the game are simple:
 In order to simulate the infinite grid we implemented a cyclic world version.
 
 <p align="center">
-  <img src="https://cloud.githubusercontent.com/assets/5918727/13548781/f6b53b34-e300-11e5-8c89-83f8eb6942c8.gif" alt="Gosper's Glider Gun"
-  style="width: 200px;height: 200px"/>
+  <img src="https://cloud.githubusercontent.com/assets/5918727/13548956/cc257308-e304-11e5-886b-096fa8a2bb0f.gif" alt="Gosper's Glider Gun"
+ width=300 height=300/>
 </p>
 
 For more information and other interesting facts visit [Conway's Game of Life on Wikipedia](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life)
@@ -48,7 +48,9 @@ The GLUT and OpenGL libraries are required for the execution of the game.
 An Example:
 
 <p align="center">
-  <img src="" alt="Game of Life"/>
+  <img src="https://cloud.githubusercontent.com/assets/5918727/13549668/416decea-e313-11e5-95fb-2a1c6ff521bf.gif"
+  alt="Game of Life"
+ width=300 height=300/>
 </p>
 
 ## Building
